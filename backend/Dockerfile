@@ -20,8 +20,8 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 # Copy built artifacts
 COPY --from=build /app/dist ./dist
-# Copy any runtime assets if needed (e.g., uploads directory)
-COPY --from=build /app/uploads ./uploads
+# Ensure uploads directory exists at runtime
+RUN mkdir -p ./uploads
 
 EXPOSE 3002
 CMD ["node", "dist/main.js"]
