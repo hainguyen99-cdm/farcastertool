@@ -37,15 +37,15 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:3002
+        NEXT_PUBLIC_API_URL: http://54.151.242.118:3002
     container_name: farcaster-frontend
     depends_on:
       - backend
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: http://localhost:3002
+      NEXT_PUBLIC_API_URL: http://54.151.242.118:3002
     ports:
-      - "3000:3000"
+      - "80:3000"
 
 volumes:
   mongo_data:
