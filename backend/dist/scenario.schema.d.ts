@@ -1,0 +1,31 @@
+export declare enum ActionType {
+    GET_FEED = "GetFeed",
+    LIKE_CAST = "LikeCast",
+    RECAST_CAST = "RecastCast",
+    DELAY = "Delay",
+    JOIN_CHANNEL = "JoinChannel",
+    PIN_MINI_APP = "PinMiniApp"
+}
+export type ActionConfig = Record<string, unknown>;
+export declare class Action {
+    type: ActionType;
+    config: ActionConfig;
+    order: number;
+}
+export declare class Scenario {
+    name: string;
+    actions: Action[];
+    shuffle: boolean;
+    loop: number;
+    createdAt: Date;
+    updatedAt: Date;
+}
+export declare const ScenarioSchema: import("mongoose").Schema<Scenario, import("mongoose").Model<Scenario, any, any, any, import("mongoose").Document<unknown, any, Scenario, any, {}> & Scenario & {
+    _id: import("mongoose").Types.ObjectId;
+} & {
+    __v: number;
+}, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Scenario, import("mongoose").Document<unknown, {}, import("mongoose").FlatRecord<Scenario>, {}, import("mongoose").ResolveSchemaOptions<import("mongoose").DefaultSchemaOptions>> & import("mongoose").FlatRecord<Scenario> & {
+    _id: import("mongoose").Types.ObjectId;
+} & {
+    __v: number;
+}>;

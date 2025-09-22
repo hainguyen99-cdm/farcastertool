@@ -1,0 +1,30 @@
+import { HttpService } from '@nestjs/axios';
+import { EncryptionService } from './encryption.service';
+export declare class FarcasterService {
+    private readonly httpService;
+    private readonly encryptionService;
+    private readonly baseUrl;
+    private static readonly MAX_RETRY_ATTEMPTS;
+    private static readonly INITIAL_BACKOFF_MS;
+    private static readonly RATE_LIMIT_WINDOW_MS;
+    private static readonly RATE_LIMIT_MAX_REQUESTS;
+    private readonly rateLimitStore;
+    constructor(httpService: HttpService, encryptionService: EncryptionService);
+    private buildAuthHeaders;
+    getRandomCastHashFromFeed(feedResponse: unknown): string | null;
+    extractCastHashFromUrl(url: string): string | null;
+    getFirstCastHashFromThread(encryptedToken: string, url: string): Promise<string | null>;
+    private extractCastHashes;
+    private findFeedItems;
+    private findCastHashOnItem;
+    getFeed(encryptedToken: string): Promise<unknown>;
+    likeCast(encryptedToken: string, castHash: string): Promise<unknown>;
+    recastCast(encryptedToken: string, castHash: string): Promise<unknown>;
+    joinChannel(encryptedToken: string, channelKey: string, inviteCode: string): Promise<unknown>;
+    pinMiniApp(encryptedToken: string, domain: string): Promise<unknown>;
+    private executeWithRetry;
+    private enforceRateLimit;
+    private isRetryableError;
+    private resolveStatus;
+    private sleep;
+}

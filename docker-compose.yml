@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: farcaster-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: farcaster-redis
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: farcaster-backend
+    depends_on:
+      - mongo
+      - redis
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      MONGODB_URI: mongodb://mongo:27017/farcaster-tool
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ENCRYPTION_KEY: your-32-character-encryption-key-here
+      FARCASTER_API_URL: https://client.farcaster.xyz
+    ports:
+      - "3002:3002"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3002
+    container_name: farcaster-frontend
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:3002
+    ports:
+      - "3000:3000"
+
+volumes:
+  mongo_data:
+
+
