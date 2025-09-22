@@ -447,7 +447,7 @@ const AccountsPage: React.FC = () => {
         isVisible={showActionStatus}
         accountName={currentExecutingAccount ? accounts.find(a => a._id === currentExecutingAccount)?.name || 'Unknown Account' : 'Unknown Account'}
         isExecuting={isExecutingScript}
-        currentAction={currentAction}
+        currentAction={currentAction ?? undefined}
         currentActionIndex={currentActionIndex}
         totalActions={totalActions}
         results={actionResults}
