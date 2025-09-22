@@ -25,7 +25,7 @@ RUN npm ci --omit=dev --legacy-peer-deps
 # Copy required runtime assets
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
-COPY --from=build /app/next.config.ts ./next.config.ts
+COPY --from=build /app/next.config.mjs ./next.config.mjs
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 EXPOSE 3000
