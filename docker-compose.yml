@@ -45,7 +45,7 @@ services:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: http://backend:3002
     ports:
-      - "80:3000"
+      - "3000:3000"
 
 volumes:
   mongo_data:
