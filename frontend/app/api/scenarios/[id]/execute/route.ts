@@ -3,9 +3,10 @@ import { forwardJson } from '../../../_lib/backend';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }): Promise<Response> {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
+  const { id } = await params;
   const body = await req.text();
-  const res = await forwardJson(`/scenarios/${encodeURIComponent(params.id)}/execute`, {
+  const res = await forwardJson(`/scenarios/${encodeURIComponent(id)}/execute`, {
     method: 'POST',
     body,
     headers: { 'Content-Type': 'application/json' },
