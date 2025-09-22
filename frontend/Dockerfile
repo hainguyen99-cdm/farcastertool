@@ -2,7 +2,8 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+ENV NPM_CONFIG_LEGACY_PEER_DEPS=true
+RUN npm ci --legacy-peer-deps
 
 FROM node:20-alpine AS build
 WORKDIR /app
@@ -19,7 +20,8 @@ ENV NODE_ENV=production \
     PORT=3000
 # Install only production dependencies for runtime
 COPY package*.json ./
-RUN npm ci --omit=dev
+ENV NPM_CONFIG_LEGACY_PEER_DEPS=true
+RUN npm ci --omit=dev --legacy-peer-deps
 # Copy required runtime assets
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
