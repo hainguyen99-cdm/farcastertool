@@ -37,13 +37,13 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://54.151.242.118:3002
+        NEXT_PUBLIC_API_URL: http://backend:3002
     container_name: farcaster-frontend
     depends_on:
       - backend
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: http://54.151.242.118:3002
+      NEXT_PUBLIC_API_URL: http://backend:3002
     ports:
       - "80:3000"
 
