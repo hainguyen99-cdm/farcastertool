@@ -399,7 +399,7 @@ const ScriptsPage: React.FC = () => {
               : 'Unknown Account'
         }
         isExecuting={isExecuting}
-        currentAction={currentAction}
+        currentAction={currentAction ?? undefined}
         currentActionIndex={currentActionIndex}
         totalActions={totalActions}
         results={actionResults}
