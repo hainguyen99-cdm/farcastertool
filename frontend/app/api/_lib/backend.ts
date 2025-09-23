@@ -2,7 +2,7 @@ const normalizeUrl = (url: string): string => url.replace(/\/$/, '');
 
 const dedupe = (arr: string[]): string[] => Array.from(new Set(arr));
 
-const resolveCandidates = (): string[] => {
+export const resolveBackendCandidates = (): string[] => {
   const configured = process.env.NEXT_PUBLIC_API_URL || '';
   const mappedConfigured = configured.includes('://backend')
     ? configured.replace('://backend', '://127.0.0.1')
@@ -21,11 +21,11 @@ const resolveCandidates = (): string[] => {
 };
 
 export const getApiBaseUrl = (): string => {
-  return resolveCandidates()[0] || 'http://127.0.0.1:3003';
+  return resolveBackendCandidates()[0] || 'http://127.0.0.1:3003';
 };
 
 export const forwardJson = async (path: string, init: RequestInit): Promise<Response> => {
-  const candidates = resolveCandidates();
+  const candidates = resolveBackendCandidates();
   let lastError: unknown = null;
   for (const base of candidates) {
     try {
@@ -39,7 +39,7 @@ export const forwardJson = async (path: string, init: RequestInit): Promise<Resp
 };
 
 export const forwardFormData = async (path: string, formData: FormData, headers: Headers): Promise<Response> => {
-  const candidates = resolveCandidates();
+  const candidates = resolveBackendCandidates();
   const initHeaders: Record<string, string> = {};
   headers.forEach((value, key) => {
     if (key.toLowerCase() === 'content-type') return;
