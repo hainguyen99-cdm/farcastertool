@@ -1,32 +1,61 @@
-export const getApiBaseUrl = (): string => {
+const normalizeUrl = (url: string): string => url.replace(/\/$/, '');
+
+const dedupe = (arr: string[]): string[] => Array.from(new Set(arr));
+
+const resolveCandidates = (): string[] => {
   const configured = process.env.NEXT_PUBLIC_API_URL || '';
-  const url = configured || 'http://localhost:3003';
-  const normalized = url.replace(/\/$/, '');
-  if (normalized.includes('://backend')) {
-    return 'http://localhost:3003';
-  }
-  return normalized;
+  const mappedConfigured = configured.includes('://backend')
+    ? configured.replace('://backend', '://127.0.0.1')
+    : configured;
+  const baseCandidates = [
+    mappedConfigured,
+    'http://127.0.0.1:3003',
+    'http://localhost:3003',
+    'http://127.0.0.1:3002',
+    'http://localhost:3002',
+  ].filter(Boolean) as string[];
+  return dedupe(baseCandidates.map(normalizeUrl));
+};
+
+export const getApiBaseUrl = (): string => {
+  return resolveCandidates()[0] || 'http://127.0.0.1:3003';
 };
 
 export const forwardJson = async (path: string, init: RequestInit): Promise<Response> => {
-  const base = getApiBaseUrl();
-  const response = await fetch(`${base}${path}`, init);
-  return response;
+  const candidates = resolveCandidates();
+  let lastError: unknown = null;
+  for (const base of candidates) {
+    try {
+      return await fetch(`${base}${path}`, init);
+    } catch (err) {
+      lastError = err;
+      continue;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Failed to reach backend');
 };
 
 export const forwardFormData = async (path: string, formData: FormData, headers: Headers): Promise<Response> => {
-  const base = getApiBaseUrl();
+  const candidates = resolveCandidates();
   const initHeaders: Record<string, string> = {};
   headers.forEach((value, key) => {
     if (key.toLowerCase() === 'content-type') return;
     initHeaders[key] = value;
   });
-  const response = await fetch(`${base}${path}`, {
-    method: 'POST',
-    body: formData as unknown as BodyInit,
-    headers: initHeaders,
-  });
-  return response;
+  let lastError: unknown = null;
+  for (const base of candidates) {
+    try {
+      return await fetch(`${base}${path}`, {
+        method: 'POST',
+        body: formData as unknown as BodyInit,
+        headers: initHeaders,
+      });
+    } catch (err) {
+      lastError = err;
+      continue;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Failed to reach backend');
 };
 
 
