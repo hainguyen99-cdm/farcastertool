@@ -4,21 +4,28 @@ const dedupe = (arr: string[]): string[] => Array.from(new Set(arr));
 
 export const resolveBackendCandidates = (): string[] => {
   const configured = process.env.NEXT_PUBLIC_API_URL || '';
+  const serverOnly = process.env.BACKEND_URL || process.env.API_BASE_URL || '';
   const mappedConfigured = configured.includes('://backend')
     ? configured.replace('://backend', '://127.0.0.1')
     : configured;
   const baseCandidates = [
     mappedConfigured,
-    'http://backend:3003',
+    serverOnly,
+    'http://backend:3002',
     'http://host.docker.internal:3003',
+    'http://host.docker.internal:3002',
+    'http://172.17.0.1:3003',
+    'http://172.17.0.1:3002',
+    'http://127.0.0.1:3003',
     'http://localhost:3003',
-
+    'http://127.0.0.1:3002',
+    'http://localhost:3002',
   ].filter(Boolean) as string[];
   return dedupe(baseCandidates.map(normalizeUrl));
 };
 
 export const getApiBaseUrl = (): string => {
-  return resolveBackendCandidates()[0] || 'http://localhost:3003';
+  return resolveBackendCandidates()[0] || 'http://127.0.0.1:3003';
 };
 
 export const forwardJson = async (path: string, init: RequestInit): Promise<Response> => {

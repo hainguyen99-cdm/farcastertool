@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getApiBaseUrl } from '../../_lib/backend';
+import { forwardJson } from '../../_lib/backend';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,8 +67,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       }).filter(a => a.name && a.token);
     }
 
-    const base = getApiBaseUrl();
-    const response = await fetch(`${base}/accounts/import`, {
+    const response = await forwardJson('/accounts/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accounts }),
