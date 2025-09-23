@@ -1,9 +1,11 @@
 export const getApiBaseUrl = (): string => {
-  const url = process.env.NEXT_PUBLIC_API_URL || '';
-  if (!url) {
-    throw new Error('Missing NEXT_PUBLIC_API_URL');
+  const configured = process.env.NEXT_PUBLIC_API_URL || '';
+  const url = configured || 'http://localhost:3002';
+  const normalized = url.replace(/\/$/, '');
+  if (normalized.includes('://backend')) {
+    return 'http://localhost:3002';
   }
-  return url.replace(/\/$/, '');
+  return normalized;
 };
 
 export const forwardJson = async (path: string, init: RequestInit): Promise<Response> => {
