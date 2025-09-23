@@ -9,19 +9,16 @@ export const resolveBackendCandidates = (): string[] => {
     : configured;
   const baseCandidates = [
     mappedConfigured,
-    'http://backend:3002',
+    'http://backend:3003',
     'http://host.docker.internal:3003',
-    'http://host.docker.internal:3002',
-    'http://127.0.0.1:3003',
     'http://localhost:3003',
-    'http://127.0.0.1:3002',
-    'http://localhost:3002',
+
   ].filter(Boolean) as string[];
   return dedupe(baseCandidates.map(normalizeUrl));
 };
 
 export const getApiBaseUrl = (): string => {
-  return resolveBackendCandidates()[0] || 'http://127.0.0.1:3003';
+  return resolveBackendCandidates()[0] || 'http://localhost:3003';
 };
 
 export const forwardJson = async (path: string, init: RequestInit): Promise<Response> => {
