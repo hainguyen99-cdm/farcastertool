@@ -10,6 +10,8 @@ const resolveCandidates = (): string[] => {
   const baseCandidates = [
     mappedConfigured,
     'http://backend:3002',
+    'http://host.docker.internal:3003',
+    'http://host.docker.internal:3002',
     'http://127.0.0.1:3003',
     'http://localhost:3003',
     'http://127.0.0.1:3002',
