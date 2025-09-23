@@ -14,7 +14,7 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
-    PORT=3002
+    PORT=3003
 # Install only production dependencies
 COPY package*.json ./
 RUN npm ci --omit=dev
@@ -23,7 +23,7 @@ COPY --from=build /app/dist ./dist
 # Ensure uploads directory exists at runtime
 RUN mkdir -p ./uploads
 
-EXPOSE 3002
+EXPOSE 3003
 CMD ["node", "dist/main.js"]
 
 
