@@ -1,9 +1,9 @@
 export const getApiBaseUrl = (): string => {
   const configured = process.env.NEXT_PUBLIC_API_URL || '';
-  const url = configured || 'http://localhost:3002';
+  const url = configured || 'http://localhost:3003';
   const normalized = url.replace(/\/$/, '');
   if (normalized.includes('://backend')) {
-    return 'http://localhost:3002';
+    return 'http://localhost:3003';
   }
   return normalized;
 };

@@ -55,9 +55,17 @@ export default function Home() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/stats');
+      const response = await fetch('/api/stats', { cache: 'no-store' });
       if (!response.ok) {
-        throw new Error('Failed to fetch stats');
+        let message = 'Failed to fetch stats';
+        try {
+          const errJson = await response.json();
+          message = errJson?.message || errJson?.error || message;
+        } catch (_) {
+          // ignore parse error
+        }
+        setError(message);
+        return;
       }
       const data = await response.json();
 
