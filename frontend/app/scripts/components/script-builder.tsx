@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 export type ActionType = 'GetFeed' | 'LikeCast' | 'RecastCast' | 'PinMiniApp' | 'Delay' | 'JoinChannel' | string;
 
@@ -27,6 +27,12 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
   const [actions, setActions] = useState<ScriptAction[]>(script.actions);
   const [newType, setNewType] = useState<ActionType>('GetFeed');
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  // Sync internal actions state when script prop changes
+  useEffect(() => {
+    setActions(script.actions);
+  }, [script.actions]);
 
   const availableTypes: ActionType[] = ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel'];
 
@@ -47,12 +53,15 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
 
   const handleSave = useCallback(async (): Promise<void> => {
     setIsSaving(true);
+    setSaveMessage(null);
     try {
       const updatedScript: Script = {
         ...script,
         actions: actions.map((a, i) => ({ ...a, order: i })),
       };
       onSave(updatedScript);
+      setSaveMessage('Script saved successfully!');
+      setTimeout(() => setSaveMessage(null), 3000);
     } finally {
       setIsSaving(false);
     }
@@ -252,7 +261,17 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
       </div>
 
       {/* Save Button */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <div className="text-sm text-gray-500">
+            {actions.length} action{actions.length !== 1 ? 's' : ''} configured
+          </div>
+          {saveMessage && (
+            <div className="text-sm text-green-600 font-medium">
+              {saveMessage}
+            </div>
+          )}
+        </div>
         <button
           type="button"
           className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:opacity-50"

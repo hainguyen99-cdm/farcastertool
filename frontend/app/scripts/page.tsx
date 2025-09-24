@@ -32,6 +32,7 @@ const ScriptsPage: React.FC = () => {
   const [showActionStatus, setShowActionStatus] = useState<boolean>(false);
   const [currentExecutingAccount, setCurrentExecutingAccount] = useState<string | null>(null);
   const [actionResults, setActionResults] = useState<ActionResult[]>([]);
+  const [allAccountResults, setAllAccountResults] = useState<Record<string, ActionResult[]>>({});
   const [currentAction, setCurrentAction] = useState<string | null>(null);
   const [currentActionIndex, setCurrentActionIndex] = useState<number>(0);
   const [totalActions, setTotalActions] = useState<number>(0);
@@ -70,13 +71,15 @@ const ScriptsPage: React.FC = () => {
   }, []);
 
   const handleSaveScript = useCallback((script: Script): void => {
-    const updatedScripts = scripts.find(s => s.id === script.id)
-      ? scripts.map(s => s.id === script.id ? script : s)
-      : [...scripts, script];
-    
-    setScripts(updatedScripts);
-    localStorage.setItem('farcaster-scripts', JSON.stringify(updatedScripts));
-  }, [scripts]);
+    setScripts(prevScripts => {
+      const updatedScripts = prevScripts.find(s => s.id === script.id)
+        ? prevScripts.map(s => s.id === script.id ? script : s)
+        : [...prevScripts, script];
+      
+      localStorage.setItem('farcaster-scripts', JSON.stringify(updatedScripts));
+      return updatedScripts;
+    });
+  }, []);
 
   const handleCreateScript = useCallback((): void => {
     if (!newScriptName.trim()) return;
@@ -93,13 +96,15 @@ const ScriptsPage: React.FC = () => {
   }, [newScriptName, handleSaveScript]);
 
   const handleDeleteScript = useCallback((scriptId: string): void => {
-    const updatedScripts = scripts.filter(s => s.id !== scriptId);
-    setScripts(updatedScripts);
-    localStorage.setItem('farcaster-scripts', JSON.stringify(updatedScripts));
+    setScripts(prevScripts => {
+      const updatedScripts = prevScripts.filter(s => s.id !== scriptId);
+      localStorage.setItem('farcaster-scripts', JSON.stringify(updatedScripts));
+      return updatedScripts;
+    });
     if (selectedScriptId === scriptId) {
       setSelectedScriptId(null);
     }
-  }, [scripts, selectedScriptId]);
+  }, [selectedScriptId]);
 
   const handleExecuteScript = useCallback(async (): Promise<void> => {
     if (!selectedScriptId || selectedAccountIds.length === 0) return;
@@ -111,6 +116,7 @@ const ScriptsPage: React.FC = () => {
     setExecutionResult(null);
     setShowActionStatus(true);
     setActionResults([]);
+    setAllAccountResults({});
     setCurrentAction(null);
     setCurrentActionIndex(0);
     setTotalActions(script.actions.length);
@@ -152,24 +158,32 @@ const ScriptsPage: React.FC = () => {
           body: JSON.stringify({ accountId, actions: script.actions }),
         });
 
-        if (res.ok) {
-          const payload = await res.json();
-          let normalized: ActionResult[] = [];
-          if (Array.isArray(payload)) {
-            normalized = payload.flatMap((p: { results?: ActionResult[] }) => Array.isArray(p?.results) ? p.results : []);
-          } else if (payload && Array.isArray(payload.results)) {
-            normalized = payload.results as ActionResult[];
-          }
-          const merged: ActionResult[] = script.actions.map((a, idx) => {
-            const server = normalized[idx];
-            const existing = interimResults[idx];
-            return server ? server : (existing || { actionType: a.type, success: true, result: { message: 'Action completed successfully' } });
-          });
-          setActionResults(merged);
-        } else {
-          const failed: ActionResult[] = script.actions.map((a) => ({ actionType: a.type, success: false, error: `HTTP ${res.status}: ${res.statusText}` }));
-          setActionResults(failed);
-        }
+         let finalResults: ActionResult[] = [];
+         if (res.ok) {
+           const payload = await res.json();
+           let normalized: ActionResult[] = [];
+           if (Array.isArray(payload)) {
+             normalized = payload.flatMap((p: { results?: ActionResult[] }) => Array.isArray(p?.results) ? p.results : []);
+           } else if (payload && Array.isArray(payload.results)) {
+             normalized = payload.results as ActionResult[];
+           }
+           finalResults = script.actions.map((a, idx) => {
+             const server = normalized[idx];
+             const existing = interimResults[idx];
+             return server ? server : (existing || { actionType: a.type, success: true, result: { message: 'Action completed successfully' } });
+           });
+         } else {
+           finalResults = script.actions.map((a) => ({ actionType: a.type, success: false, error: `HTTP ${res.status}: ${res.statusText}` }));
+         }
+
+         // Store results for this account
+         setAllAccountResults(prev => ({
+           ...prev,
+           [accountId]: finalResults
+         }));
+
+         // Update current action results for display
+         setActionResults(finalResults);
         
         // Prepare for next account
         setCurrentAction(null);
@@ -201,6 +215,7 @@ const ScriptsPage: React.FC = () => {
     setShowActionStatus(false);
     setCurrentExecutingAccount(null);
     setActionResults([]);
+    setAllAccountResults({});
     setCurrentAction(null);
     setCurrentActionIndex(0);
     setTotalActions(0);
@@ -403,6 +418,8 @@ const ScriptsPage: React.FC = () => {
         currentActionIndex={currentActionIndex}
         totalActions={totalActions}
         results={actionResults}
+        allAccountResults={allAccountResults}
+        accounts={accounts}
         onClose={handleCloseActionStatus}
       />
     </div>
