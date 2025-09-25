@@ -22,6 +22,8 @@ export declare class FarcasterService {
     recastCast(encryptedToken: string, castHash: string): Promise<unknown>;
     joinChannel(encryptedToken: string, channelKey: string, inviteCode: string): Promise<unknown>;
     pinMiniApp(encryptedToken: string, domain: string): Promise<unknown>;
+    getUserByUsername(encryptedToken: string, username: string): Promise<unknown>;
+    followUser(encryptedToken: string, targetFid: number): Promise<unknown>;
     private executeWithRetry;
     private enforceRateLimit;
     private isRetryableError;

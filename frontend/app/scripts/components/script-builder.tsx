@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 
-export type ActionType = 'GetFeed' | 'LikeCast' | 'RecastCast' | 'PinMiniApp' | 'Delay' | 'JoinChannel' | string;
+export type ActionType = 'GetFeed' | 'LikeCast' | 'RecastCast' | 'PinMiniApp' | 'Delay' | 'JoinChannel' | 'FollowUser' | string;
 
 export interface ScriptAction {
   readonly id: string;
@@ -34,7 +34,7 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
     setActions(script.actions);
   }, [script.actions]);
 
-  const availableTypes: ActionType[] = ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel'];
+  const availableTypes: ActionType[] = ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel', 'FollowUser'];
 
   const handleAddAction = useCallback((): void => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -247,6 +247,26 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
                       }}
                     />
                     <p className="text-xs text-gray-500">Enter the miniapp domain to pin (favorite).</p>
+                  </div>
+                </div>
+              )}
+              {action.type === 'FollowUser' && (
+                <div className="max-w-md">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor={`userLink-${action.id}`} className="text-sm text-gray-700">User Link</label>
+                    <input
+                      id={`userLink-${action.id}`}
+                      type="url"
+                      placeholder="https://farcaster.xyz/pauline-unik"
+                      className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                      value={typeof action.config?.userLink === 'string' ? action.config.userLink as string : ''}
+                      onChange={(e) => {
+                        handleUpdateAction(action.id, {
+                          config: { ...action.config, userLink: e.target.value }
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-gray-500">Enter the full Farcaster user profile URL (e.g., https://farcaster.xyz/username).</p>
                   </div>
                 </div>
               )}

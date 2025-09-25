@@ -211,6 +211,28 @@ let FarcasterService = class FarcasterService {
             throw new common_1.HttpException('Failed to pin miniapp', this.resolveStatus(err));
         }
     }
+    async getUserByUsername(encryptedToken, username) {
+        const token = this.encryptionService.decrypt(encryptedToken);
+        this.enforceRateLimit(`getUserByUsername:${encryptedToken}`);
+        try {
+            const response = await this.executeWithRetry(async () => (0, rxjs_1.firstValueFrom)(this.httpService.get(`${this.baseUrl}/v2/user-by-username?username=${encodeURIComponent(username)}`, { headers: this.buildAuthHeaders(token) })));
+            return response.data;
+        }
+        catch (err) {
+            throw new common_1.HttpException('Failed to get user by username', this.resolveStatus(err));
+        }
+    }
+    async followUser(encryptedToken, targetFid) {
+        const token = this.encryptionService.decrypt(encryptedToken);
+        this.enforceRateLimit(`followUser:${encryptedToken}`);
+        try {
+            const response = await this.executeWithRetry(async () => (0, rxjs_1.firstValueFrom)(this.httpService.put(`${this.baseUrl}/v2/follows`, { targetFid }, { headers: this.buildAuthHeaders(token) })));
+            return response.data;
+        }
+        catch (err) {
+            throw new common_1.HttpException('Failed to follow user', this.resolveStatus(err));
+        }
+    }
     async executeWithRetry(operation) {
         let attempt = 0;
         let backoffMs = FarcasterService_1.INITIAL_BACKOFF_MS;

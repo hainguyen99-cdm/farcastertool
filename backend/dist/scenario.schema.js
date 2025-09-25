@@ -16,9 +16,10 @@ var ActionType;
     ActionType["GET_FEED"] = "GetFeed";
     ActionType["LIKE_CAST"] = "LikeCast";
     ActionType["RECAST_CAST"] = "RecastCast";
+    ActionType["PIN_MINI_APP"] = "PinMiniApp";
     ActionType["DELAY"] = "Delay";
     ActionType["JOIN_CHANNEL"] = "JoinChannel";
-    ActionType["PIN_MINI_APP"] = "PinMiniApp";
+    ActionType["FOLLOW_USER"] = "FollowUser";
 })(ActionType || (exports.ActionType = ActionType = {}));
 let Action = class Action {
     type;

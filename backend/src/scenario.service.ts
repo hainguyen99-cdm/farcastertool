@@ -155,6 +155,67 @@ export class ScenarioService {
           // 'random' method is the default and requires no additional validation
           break;
         }
+        case ActionType.RECAST_CAST: {
+          const config = action.config as Record<string, unknown> | undefined;
+          const recastMethod = config && (config['likeMethod'] as string);
+          
+          if (recastMethod === 'url') {
+            const castUrl = config && (config['castUrl'] as string);
+            if (!castUrl || typeof castUrl !== 'string') {
+              errors.push(`Action at index ${index} (RecastCast) with URL method requires 'castUrl' (string).`);
+            } else {
+              // Basic URL validation for Farcaster URLs
+              try {
+                const url = new URL(castUrl);
+                if (url.hostname !== 'farcaster.xyz' && url.hostname !== 'warpcast.com') {
+                  errors.push(`Action at index ${index} (RecastCast) castUrl must be a valid Farcaster URL (farcaster.xyz or warpcast.com).`);
+                }
+                // Validate URL format: /username/0x...
+                const pathParts = url.pathname.split('/');
+                if (pathParts.length < 3 || !pathParts[2].startsWith('0x')) {
+                  errors.push(`Action at index ${index} (RecastCast) castUrl must be in format: https://farcaster.xyz/username/0x...`);
+                }
+              } catch {
+                errors.push(`Action at index ${index} (RecastCast) castUrl must be a valid URL.`);
+              }
+            }
+          } else if (recastMethod && recastMethod !== 'random') {
+            errors.push(`Action at index ${index} (RecastCast) has invalid likeMethod. Must be 'random' or 'url'.`);
+          }
+          // 'random' method is the default and requires no additional validation
+          break;
+        }
+        case ActionType.PIN_MINI_APP: {
+          const config = action.config as Record<string, unknown> | undefined;
+          const domain = config && (config['domain'] as string);
+          if (!domain || typeof domain !== 'string') {
+            errors.push(`Action at index ${index} (PinMiniApp) requires 'domain' (string).`);
+          }
+          break;
+        }
+        case ActionType.FOLLOW_USER: {
+          const config = action.config as Record<string, unknown> | undefined;
+          const userLink = config && (config['userLink'] as string);
+          if (!userLink || typeof userLink !== 'string') {
+            errors.push(`Action at index ${index} (FollowUser) requires 'userLink' (string).`);
+          } else {
+            // Basic URL validation for Farcaster user URLs
+            try {
+              const url = new URL(userLink);
+              if (url.hostname !== 'farcaster.xyz' && url.hostname !== 'warpcast.com') {
+                errors.push(`Action at index ${index} (FollowUser) userLink must be a valid Farcaster URL (farcaster.xyz or warpcast.com).`);
+              }
+              // Validate URL format: /username
+              const pathParts = url.pathname.split('/');
+              if (pathParts.length < 2 || !pathParts[1]) {
+                errors.push(`Action at index ${index} (FollowUser) userLink must be in format: https://farcaster.xyz/username`);
+              }
+            } catch {
+              errors.push(`Action at index ${index} (FollowUser) userLink must be a valid URL.`);
+            }
+          }
+          break;
+        }
         default: {
           errors.push(`Action at index ${index} has unsupported type.`);
         }

@@ -104,6 +104,25 @@ let ActionProcessor = class ActionProcessor {
                     result = await this.farcasterService.pinMiniApp(encryptedToken, domain);
                     break;
                 }
+                case scenario_schema_1.ActionType.FOLLOW_USER: {
+                    const userLink = action.config['userLink'];
+                    if (!userLink) {
+                        throw new Error('Missing userLink for FOLLOW_USER action');
+                    }
+                    const urlMatch = userLink.match(/farcaster\.xyz\/([^\/\?]+)/);
+                    if (!urlMatch) {
+                        throw new Error('Invalid Farcaster user URL format');
+                    }
+                    const username = urlMatch[1];
+                    const userInfo = await this.farcasterService.getUserByUsername(encryptedToken, username);
+                    const userData = userInfo;
+                    const targetFid = userData?.result?.user?.fid;
+                    if (!targetFid) {
+                        throw new Error(`Could not find user FID for username: ${username}`);
+                    }
+                    result = await this.farcasterService.followUser(encryptedToken, targetFid);
+                    break;
+                }
                 default: {
                     const neverType = action.type;
                     throw new Error(`Unknown action type: ${String(neverType)}`);

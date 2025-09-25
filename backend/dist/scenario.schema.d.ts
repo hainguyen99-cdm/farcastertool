@@ -2,9 +2,10 @@ export declare enum ActionType {
     GET_FEED = "GetFeed",
     LIKE_CAST = "LikeCast",
     RECAST_CAST = "RecastCast",
+    PIN_MINI_APP = "PinMiniApp",
     DELAY = "Delay",
     JOIN_CHANNEL = "JoinChannel",
-    PIN_MINI_APP = "PinMiniApp"
+    FOLLOW_USER = "FollowUser"
 }
 export type ActionConfig = Record<string, unknown>;
 export declare class Action {

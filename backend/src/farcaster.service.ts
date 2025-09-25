@@ -282,6 +282,43 @@ export class FarcasterService {
 		}
 	}
 
+	async getUserByUsername(encryptedToken: string, username: string): Promise<unknown> {
+		const token: string = this.encryptionService.decrypt(encryptedToken);
+		this.enforceRateLimit(`getUserByUsername:${encryptedToken}`);
+		try {
+			const response = await this.executeWithRetry(async () =>
+				firstValueFrom(
+					this.httpService.get(
+						`${this.baseUrl}/v2/user-by-username?username=${encodeURIComponent(username)}`,
+						{ headers: this.buildAuthHeaders(token) },
+					),
+				),
+			);
+			return response.data as unknown;
+		} catch (err) {
+			throw new HttpException('Failed to get user by username', this.resolveStatus(err));
+		}
+	}
+
+	async followUser(encryptedToken: string, targetFid: number): Promise<unknown> {
+		const token: string = this.encryptionService.decrypt(encryptedToken);
+		this.enforceRateLimit(`followUser:${encryptedToken}`);
+		try {
+			const response = await this.executeWithRetry(async () =>
+				firstValueFrom(
+					this.httpService.put(
+						`${this.baseUrl}/v2/follows`,
+						{ targetFid },
+						{ headers: this.buildAuthHeaders(token) },
+					),
+				),
+			);
+			return response.data as unknown;
+		} catch (err) {
+			throw new HttpException('Failed to follow user', this.resolveStatus(err));
+		}
+	}
+
 	private async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
 		let attempt: number = 0;
 		let backoffMs: number = FarcasterService.INITIAL_BACKOFF_MS;

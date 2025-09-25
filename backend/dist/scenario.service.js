@@ -146,6 +146,66 @@ let ScenarioService = class ScenarioService {
                     }
                     break;
                 }
+                case scenario_schema_1.ActionType.RECAST_CAST: {
+                    const config = action.config;
+                    const recastMethod = config && config['likeMethod'];
+                    if (recastMethod === 'url') {
+                        const castUrl = config && config['castUrl'];
+                        if (!castUrl || typeof castUrl !== 'string') {
+                            errors.push(`Action at index ${index} (RecastCast) with URL method requires 'castUrl' (string).`);
+                        }
+                        else {
+                            try {
+                                const url = new URL(castUrl);
+                                if (url.hostname !== 'farcaster.xyz' && url.hostname !== 'warpcast.com') {
+                                    errors.push(`Action at index ${index} (RecastCast) castUrl must be a valid Farcaster URL (farcaster.xyz or warpcast.com).`);
+                                }
+                                const pathParts = url.pathname.split('/');
+                                if (pathParts.length < 3 || !pathParts[2].startsWith('0x')) {
+                                    errors.push(`Action at index ${index} (RecastCast) castUrl must be in format: https://farcaster.xyz/username/0x...`);
+                                }
+                            }
+                            catch {
+                                errors.push(`Action at index ${index} (RecastCast) castUrl must be a valid URL.`);
+                            }
+                        }
+                    }
+                    else if (recastMethod && recastMethod !== 'random') {
+                        errors.push(`Action at index ${index} (RecastCast) has invalid likeMethod. Must be 'random' or 'url'.`);
+                    }
+                    break;
+                }
+                case scenario_schema_1.ActionType.PIN_MINI_APP: {
+                    const config = action.config;
+                    const domain = config && config['domain'];
+                    if (!domain || typeof domain !== 'string') {
+                        errors.push(`Action at index ${index} (PinMiniApp) requires 'domain' (string).`);
+                    }
+                    break;
+                }
+                case scenario_schema_1.ActionType.FOLLOW_USER: {
+                    const config = action.config;
+                    const userLink = config && config['userLink'];
+                    if (!userLink || typeof userLink !== 'string') {
+                        errors.push(`Action at index ${index} (FollowUser) requires 'userLink' (string).`);
+                    }
+                    else {
+                        try {
+                            const url = new URL(userLink);
+                            if (url.hostname !== 'farcaster.xyz' && url.hostname !== 'warpcast.com') {
+                                errors.push(`Action at index ${index} (FollowUser) userLink must be a valid Farcaster URL (farcaster.xyz or warpcast.com).`);
+                            }
+                            const pathParts = url.pathname.split('/');
+                            if (pathParts.length < 2 || !pathParts[1]) {
+                                errors.push(`Action at index ${index} (FollowUser) userLink must be in format: https://farcaster.xyz/username`);
+                            }
+                        }
+                        catch {
+                            errors.push(`Action at index ${index} (FollowUser) userLink must be a valid URL.`);
+                        }
+                    }
+                    break;
+                }
                 default: {
                     errors.push(`Action at index ${index} has unsupported type.`);
                 }
