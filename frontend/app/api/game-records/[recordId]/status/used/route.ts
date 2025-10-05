@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { forwardJson } from '../../../_lib/backend';
+import { forwardJson } from '../../../../_lib/backend';
 
 /**
  * PATCH /api/game-records/[recordId]/status/used

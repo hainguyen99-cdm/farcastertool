@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { forwardJson } from '../../_lib/backend';
+import { forwardJson } from '../../../_lib/backend';
 
 /**
  * GET /api/game-records/wallet/[walletAddress]
