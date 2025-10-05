@@ -25,10 +25,10 @@ import { forwardJson } from '../../../../_lib/backend';
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { recordId: string } }
+  { params }: { params: Promise<{ recordId: string }> }
 ) {
   try {
-    const { recordId } = params;
+    const { recordId } = await params;
     
     if (!recordId) {
       return NextResponse.json(
