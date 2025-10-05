@@ -44,6 +44,15 @@ let AccountController = class AccountController {
                 : [];
         return await this.accountService.importAccounts(accounts);
     }
+    async updateWalletAndUsername(id) {
+        return await this.accountService.updateWalletAndUsername(id);
+    }
+    async addPrivyToken(id, body) {
+        return await this.accountService.addPrivyToken(id, body);
+    }
+    async removePrivyToken(id, gameLabel) {
+        return await this.accountService.removePrivyToken(id, gameLabel);
+    }
 };
 exports.AccountController = AccountController;
 __decorate([
@@ -88,6 +97,29 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AccountController.prototype, "importAccounts", null);
+__decorate([
+    (0, common_1.Patch)(':id/update-wallet-username'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AccountController.prototype, "updateWalletAndUsername", null);
+__decorate([
+    (0, common_1.Post)(':id/privy-tokens'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AccountController.prototype, "addPrivyToken", null);
+__decorate([
+    (0, common_1.Delete)(':id/privy-tokens/:gameLabel'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('gameLabel')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], AccountController.prototype, "removePrivyToken", null);
 exports.AccountController = AccountController = __decorate([
     (0, common_1.Controller)('accounts'),
     __metadata("design:paramtypes", [account_service_1.AccountService])

@@ -3,12 +3,19 @@ export declare enum AccountStatus {
     EXPIRED = "Expired",
     ERROR = "Error"
 }
+export declare class PrivyToken {
+    gameLabel: string;
+    encryptedPrivyToken: string;
+}
 export declare class Account {
     name: string;
     encryptedToken: string;
     status: AccountStatus;
     lastUsed: Date;
     error: string;
+    walletAddress: string;
+    username: string;
+    privyTokens: PrivyToken[];
 }
 export declare const AccountSchema: import("mongoose").Schema<Account, import("mongoose").Model<Account, any, any, any, import("mongoose").Document<unknown, any, Account, any, {}> & Account & {
     _id: import("mongoose").Types.ObjectId;

@@ -1,6 +1,7 @@
 import { Model } from 'mongoose';
 import { Account, AccountStatus } from './account.schema';
 import { EncryptionService } from './encryption.service';
+import { FarcasterService } from './farcaster.service';
 export interface CreateAccountDto {
     name: string;
     token: string;
@@ -9,16 +10,26 @@ export interface UpdateAccountDto {
     name?: string;
     token?: string;
     status?: AccountStatus;
+    privyTokens?: PrivyTokenDto[];
 }
 export interface ImportAccountDto {
     name: string;
     token: string;
     status?: AccountStatus;
 }
+export interface PrivyTokenDto {
+    gameLabel: string;
+    privyToken: string;
+}
+export interface AddPrivyTokenDto {
+    gameLabel: string;
+    privyToken: string;
+}
 export declare class AccountService {
     private accountModel;
     private encryptionService;
-    constructor(accountModel: Model<Account>, encryptionService: EncryptionService);
+    private farcasterService;
+    constructor(accountModel: Model<Account>, encryptionService: EncryptionService, farcasterService: FarcasterService);
     create(createAccountDto: CreateAccountDto): Promise<Account>;
     findAll(): Promise<Account[]>;
     findOne(id: string): Promise<Account>;
@@ -31,4 +42,8 @@ export declare class AccountService {
         success: number;
         errors: string[];
     }>;
+    updateWalletAndUsername(id: string): Promise<Account>;
+    addPrivyToken(id: string, addPrivyTokenDto: AddPrivyTokenDto): Promise<Account>;
+    removePrivyToken(id: string, gameLabel: string): Promise<Account>;
+    getDecryptedPrivyToken(id: string, gameLabel: string): Promise<string>;
 }

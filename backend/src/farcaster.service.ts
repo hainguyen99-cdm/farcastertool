@@ -319,6 +319,95 @@ export class FarcasterService {
 		}
 	}
 
+	async getOnboardingState(encryptedToken: string): Promise<{ walletAddress: string; username: string }> {
+		const token: string = this.encryptionService.decrypt(encryptedToken);
+		this.enforceRateLimit(`getOnboardingState:${encryptedToken}`);
+		try {
+			// First call: Get onboarding state to get username and FID
+			const onboardingResponse = await this.executeWithRetry(async () =>
+				firstValueFrom(
+					this.httpService.get(
+						'https://client.warpcast.com/v2/onboarding-state',
+						{
+							headers: {
+								...this.buildAuthHeaders(token),
+								'accept': '*/*',
+								'accept-language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+								'origin': 'https://wallet.farcaster.xyz',
+								'referer': 'https://wallet.farcaster.xyz/',
+								'sec-fetch-dest': 'empty',
+								'sec-fetch-mode': 'cors',
+								'sec-fetch-site': 'cross-site',
+								'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+							},
+						},
+					),
+				),
+			);
+			
+			const onboardingData = onboardingResponse.data as any;
+			const state = onboardingData?.result?.state;
+			
+			if (!state) {
+				throw new Error('Invalid onboarding state response');
+			}
+			
+			const username = state.user?.username;
+			const fid = state.user?.fid;
+			
+			if (!username || !fid) {
+				throw new Error('Missing username or FID in onboarding state response');
+			}
+			
+			// Second call: Get user details to get the correct wallet address
+			const userResponse = await this.executeWithRetry(async () =>
+				firstValueFrom(
+					this.httpService.get(
+						`https://client.farcaster.xyz/v2/user?fid=${fid}`,
+						{
+							headers: {
+								...this.buildAuthHeaders(token),
+								'accept': '*/*',
+								'accept-language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+								'origin': 'https://farcaster.xyz',
+								'referer': 'https://farcaster.xyz/',
+								'sec-fetch-dest': 'empty',
+								'sec-fetch-mode': 'cors',
+								'sec-fetch-site': 'same-site',
+								'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+							},
+						},
+					),
+				),
+			);
+			
+			const userData = userResponse.data as any;
+			const user = userData?.result?.user;
+			const extras = userData?.result?.extras;
+			
+			if (!user || !extras) {
+				throw new Error('Invalid user details response');
+			}
+			
+			// Get the primary ETH wallet address from extras.ethWallets
+			const ethWallets = extras.ethWallets;
+			if (!ethWallets || !Array.isArray(ethWallets) || ethWallets.length === 0) {
+				throw new Error('No ETH wallets found in user details');
+			}
+			
+			// Use the first ETH wallet as the primary wallet address
+			const walletAddress = ethWallets[0];
+			
+			if (!walletAddress) {
+				throw new Error('Missing wallet address in user details');
+			}
+			
+			return { walletAddress, username };
+		} catch (err) {
+			throw new HttpException('Failed to get onboarding state', this.resolveStatus(err));
+		}
+	}
+
 	private async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
 		let attempt: number = 0;
 		let backoffMs: number = FarcasterService.INITIAL_BACKOFF_MS;

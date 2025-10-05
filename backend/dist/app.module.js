@@ -29,6 +29,10 @@ const log_controller_1 = require("./log.controller");
 const log_schema_1 = require("./log.schema");
 const logging_service_1 = require("./logging.service");
 const farcaster_service_1 = require("./farcaster.service");
+const signature_header_service_1 = require("./signature-header.service");
+const game_record_schema_1 = require("./game-record.schema");
+const game_record_service_1 = require("./game-record.service");
+const game_record_controller_1 = require("./game-record.controller");
 const action_processor_1 = require("./action.processor");
 const scenario_execution_service_1 = require("./scenario-execution.service");
 const stats_service_1 = require("./stats.service");
@@ -51,6 +55,7 @@ exports.AppModule = AppModule = __decorate([
                 { name: account_schema_1.Account.name, schema: account_schema_1.AccountSchema },
                 { name: scenario_schema_1.Scenario.name, schema: scenario_schema_1.ScenarioSchema },
                 { name: log_schema_1.Log.name, schema: log_schema_1.LogSchema },
+                { name: game_record_schema_1.GameRecord.name, schema: game_record_schema_1.GameRecordSchema },
             ]),
             bull_1.BullModule.forRoot({
                 redis: {
@@ -75,8 +80,8 @@ exports.AppModule = AppModule = __decorate([
             }),
             axios_1.HttpModule,
         ],
-        controllers: [app_controller_1.AppController, log_controller_1.LogController, account_controller_1.AccountController, scenario_controller_1.ScenarioController, stats_controller_1.StatsController, script_controller_1.ScriptController],
-        providers: [app_service_1.AppService, test_service_1.TestService, test_queue_processor_1.TestQueueProcessor, redis_test_service_1.RedisTestService, encryption_service_1.EncryptionService, account_service_1.AccountService, scenario_service_1.ScenarioService, logging_service_1.LoggingService, farcaster_service_1.FarcasterService, action_processor_1.ActionProcessor, scenario_execution_service_1.ScenarioExecutionService, stats_service_1.StatsService, script_execution_service_1.ScriptExecutionService],
+        controllers: [app_controller_1.AppController, log_controller_1.LogController, account_controller_1.AccountController, scenario_controller_1.ScenarioController, stats_controller_1.StatsController, script_controller_1.ScriptController, game_record_controller_1.GameRecordController],
+        providers: [app_service_1.AppService, test_service_1.TestService, test_queue_processor_1.TestQueueProcessor, redis_test_service_1.RedisTestService, encryption_service_1.EncryptionService, account_service_1.AccountService, scenario_service_1.ScenarioService, logging_service_1.LoggingService, farcaster_service_1.FarcasterService, action_processor_1.ActionProcessor, scenario_execution_service_1.ScenarioExecutionService, stats_service_1.StatsService, script_execution_service_1.ScriptExecutionService, signature_header_service_1.SignatureHeaderService, game_record_service_1.GameRecordService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

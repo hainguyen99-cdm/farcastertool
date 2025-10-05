@@ -17,6 +17,7 @@ var LogStatus;
 (function (LogStatus) {
     LogStatus["SUCCESS"] = "Success";
     LogStatus["FAILURE"] = "Failure";
+    LogStatus["UNUSED"] = "Unused";
 })(LogStatus || (exports.LogStatus = LogStatus = {}));
 let Log = class Log {
     accountId;

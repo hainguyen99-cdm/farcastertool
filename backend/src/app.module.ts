@@ -20,6 +20,10 @@ import { LogController } from './log.controller';
 import { Log, LogSchema } from './log.schema';
 import { LoggingService } from './logging.service';
 import { FarcasterService } from './farcaster.service';
+import { SignatureHeaderService } from './signature-header.service';
+import { GameRecord, GameRecordSchema } from './game-record.schema';
+import { GameRecordService } from './game-record.service';
+import { GameRecordController } from './game-record.controller';
 import { ActionProcessor } from './action.processor';
 import { ScenarioExecutionService } from './scenario-execution.service';
 import { StatsService } from './stats.service';
@@ -39,6 +43,7 @@ import { ScriptController } from './script.controller';
       { name: Account.name, schema: AccountSchema },
       { name: Scenario.name, schema: ScenarioSchema },
       { name: Log.name, schema: LogSchema },
+      { name: GameRecord.name, schema: GameRecordSchema },
     ]),
     BullModule.forRoot({
       redis: {
@@ -63,7 +68,7 @@ import { ScriptController } from './script.controller';
     }),
     HttpModule,
   ],
-  controllers: [AppController, LogController, AccountController, ScenarioController, StatsController, ScriptController],
-  providers: [AppService, TestService, TestQueueProcessor, RedisTestService, EncryptionService, AccountService, ScenarioService, LoggingService, FarcasterService, ActionProcessor, ScenarioExecutionService, StatsService, ScriptExecutionService],
+  controllers: [AppController, LogController, AccountController, ScenarioController, StatsController, ScriptController, GameRecordController],
+  providers: [AppService, TestService, TestQueueProcessor, RedisTestService, EncryptionService, AccountService, ScenarioService, LoggingService, FarcasterService, ActionProcessor, ScenarioExecutionService, StatsService, ScriptExecutionService, SignatureHeaderService, GameRecordService],
 })
 export class AppModule {}

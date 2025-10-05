@@ -24,6 +24,10 @@ export declare class FarcasterService {
     pinMiniApp(encryptedToken: string, domain: string): Promise<unknown>;
     getUserByUsername(encryptedToken: string, username: string): Promise<unknown>;
     followUser(encryptedToken: string, targetFid: number): Promise<unknown>;
+    getOnboardingState(encryptedToken: string): Promise<{
+        walletAddress: string;
+        username: string;
+    }>;
     private executeWithRetry;
     private enforceRateLimit;
     private isRetryableError;

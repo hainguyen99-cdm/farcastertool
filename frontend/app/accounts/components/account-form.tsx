@@ -2,10 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 export type AccountFormMode = 'add' | 'edit';
 
+export interface PrivyTokenInput {
+  readonly gameLabel: string;
+  readonly privyToken: string;
+}
+
 export interface AccountFormInput {
   readonly name: string;
   readonly status: 'Active' | 'Expired' | 'Error';
   readonly token?: string;
+  readonly privyTokens?: PrivyTokenInput[];
 }
 
 interface AccountFormProps {
@@ -25,13 +31,33 @@ const AccountForm: React.FC<AccountFormProps> = ({ mode, initialValues, isSubmit
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [token, setToken] = useState<string>('');
+  const [privyTokens, setPrivyTokens] = useState<PrivyTokenInput[]>([]);
+  const [newGameLabel, setNewGameLabel] = useState<string>('');
+  const [newPrivyToken, setNewPrivyToken] = useState<string>('');
 
   useEffect(() => {
     setName(initialValues?.name ?? '');
     setStatus((initialValues?.status as 'Active' | 'Expired' | 'Error') ?? 'Active');
+    setPrivyTokens(initialValues?.privyTokens ?? []);
   }, [initialValues]);
 
   const title = useMemo<string>(() => (mode === 'add' ? 'Add Account' : 'Edit Account'), [mode]);
+
+  const handleAddPrivyToken = (): void => {
+    if (newGameLabel.trim() && newPrivyToken.trim()) {
+      const newToken: PrivyTokenInput = {
+        gameLabel: newGameLabel.trim(),
+        privyToken: newPrivyToken.trim(),
+      };
+      setPrivyTokens(prev => [...prev, newToken]);
+      setNewGameLabel('');
+      setNewPrivyToken('');
+    }
+  };
+
+  const handleRemovePrivyToken = (index: number): void => {
+    setPrivyTokens(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
@@ -64,7 +90,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ mode, initialValues, isSubmit
       return;
     }
     const trimmedTokenOptional = token.trim();
-    onSubmit({ name: trimmedName, status, token: trimmedTokenOptional || undefined });
+    onSubmit({ name: trimmedName, status, token: trimmedTokenOptional || undefined, privyTokens });
   };
 
   return (
@@ -115,6 +141,70 @@ const AccountForm: React.FC<AccountFormProps> = ({ mode, initialValues, isSubmit
             <option value="Error">Error</option>
           </select>
         </div>
+        
+        {/* Privy Tokens Section */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Privy Tokens</label>
+          
+          {/* Add New Privy Token */}
+          <div className="mb-4 p-3 border border-dashed border-gray-300 rounded-md bg-gray-50">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="gameLabel" className="block text-xs font-medium text-gray-600">Game Label</label>
+                <input
+                  id="gameLabel"
+                  type="text"
+                  value={newGameLabel}
+                  onChange={(e) => setNewGameLabel(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                  placeholder="e.g., Game1, App2"
+                />
+              </div>
+              <div>
+                <label htmlFor="privyToken" className="block text-xs font-medium text-gray-600">Privy Token</label>
+                <input
+                  id="privyToken"
+                  type="password"
+                  value={newPrivyToken}
+                  onChange={(e) => setNewPrivyToken(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                  placeholder="Enter privy token"
+                />
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddPrivyToken}
+              disabled={!newGameLabel.trim() || !newPrivyToken.trim()}
+              className="mt-2 rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add Privy Token
+            </button>
+          </div>
+          
+          {/* List Existing Privy Tokens */}
+          {privyTokens.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-gray-600">Current Privy Tokens:</div>
+              {privyTokens.map((token, index) => (
+                <div key={index} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded-md">
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-gray-900">{token.gameLabel}</span>
+                    <span className="ml-2 text-xs text-gray-500">••••••••</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePrivyToken(index)}
+                    className="ml-2 rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
         {hasError ? (
           <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errorMessage}</div>
         ) : null}

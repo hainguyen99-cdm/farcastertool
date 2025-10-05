@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import GameLabelSelector from '../../accounts/components/game-label-selector';
 
-export type ActionType = 'GetFeed' | 'LikeCast' | 'RecastCast' | 'PinMiniApp' | 'Delay' | 'JoinChannel' | 'FollowUser' | string;
+export type ActionType = 'GetFeed' | 'LikeCast' | 'RecastCast' | 'PinMiniApp' | 'Delay' | 'JoinChannel' | 'FollowUser' | 'UpdateWallet' | 'CreateRecordGame' | string;
 
 export interface ScriptAction {
   readonly id: string;
@@ -34,7 +35,7 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
     setActions(script.actions);
   }, [script.actions]);
 
-  const availableTypes: ActionType[] = ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel', 'FollowUser'];
+  const availableTypes: ActionType[] = ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel', 'FollowUser', 'UpdateWallet', 'CreateRecordGame'];
 
   const handleAddAction = useCallback((): void => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -247,6 +248,19 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
                       }}
                     />
                     <p className="text-xs text-gray-500">Enter the miniapp domain to pin (favorite).</p>
+                  </div>
+                </div>
+              )}
+              {action.type === 'CreateRecordGame' && (
+                <div className="max-w-md">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor={`gameLabel-${action.id}`} className="text-sm text-gray-700">Game Label</label>
+                    <GameLabelSelector
+                      inputId={`gameLabel-${action.id}`}
+                      value={typeof action.config?.gameLabel === 'string' ? (action.config.gameLabel as string) : ''}
+                      onChange={(val) => handleUpdateAction(action.id, { config: { ...action.config, gameLabel: val } })}
+                    />
+                    <p className="text-xs text-gray-500">Must match a privy token's game label on the account.</p>
                   </div>
                 </div>
               )}

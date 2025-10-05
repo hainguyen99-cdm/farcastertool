@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
-import { AccountService, CreateAccountDto, ImportAccountDto, UpdateAccountDto } from './account.service';
+import { AccountService, CreateAccountDto, ImportAccountDto, UpdateAccountDto, AddPrivyTokenDto } from './account.service';
 
 @Controller('accounts')
 export class AccountController {
@@ -39,6 +39,21 @@ export class AccountController {
         ? (body as { accounts: ImportAccountDto[] }).accounts
         : [];
     return await this.accountService.importAccounts(accounts);
+  }
+
+  @Patch(':id/update-wallet-username')
+  async updateWalletAndUsername(@Param('id') id: string): Promise<unknown> {
+    return await this.accountService.updateWalletAndUsername(id);
+  }
+
+  @Post(':id/privy-tokens')
+  async addPrivyToken(@Param('id') id: string, @Body() body: AddPrivyTokenDto): Promise<unknown> {
+    return await this.accountService.addPrivyToken(id, body);
+  }
+
+  @Delete(':id/privy-tokens/:gameLabel')
+  async removePrivyToken(@Param('id') id: string, @Param('gameLabel') gameLabel: string): Promise<unknown> {
+    return await this.accountService.removePrivyToken(id, gameLabel);
   }
 }
 

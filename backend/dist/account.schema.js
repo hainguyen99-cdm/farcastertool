@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AccountSchema = exports.Account = exports.AccountStatus = void 0;
+exports.AccountSchema = exports.Account = exports.PrivyToken = exports.AccountStatus = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 var AccountStatus;
 (function (AccountStatus) {
@@ -17,12 +17,32 @@ var AccountStatus;
     AccountStatus["EXPIRED"] = "Expired";
     AccountStatus["ERROR"] = "Error";
 })(AccountStatus || (exports.AccountStatus = AccountStatus = {}));
+let PrivyToken = class PrivyToken {
+    gameLabel;
+    encryptedPrivyToken;
+};
+exports.PrivyToken = PrivyToken;
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], PrivyToken.prototype, "gameLabel", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], PrivyToken.prototype, "encryptedPrivyToken", void 0);
+exports.PrivyToken = PrivyToken = __decorate([
+    (0, mongoose_1.Schema)({ _id: true })
+], PrivyToken);
+const PrivyTokenSchema = mongoose_1.SchemaFactory.createForClass(PrivyToken);
 let Account = class Account {
     name;
     encryptedToken;
     status;
     lastUsed;
     error;
+    walletAddress;
+    username;
+    privyTokens;
 };
 exports.Account = Account;
 __decorate([
@@ -45,6 +65,18 @@ __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
 ], Account.prototype, "error", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], Account.prototype, "walletAddress", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], Account.prototype, "username", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: [PrivyTokenSchema], default: [] }),
+    __metadata("design:type", Array)
+], Account.prototype, "privyTokens", void 0);
 exports.Account = Account = __decorate([
     (0, mongoose_1.Schema)()
 ], Account);

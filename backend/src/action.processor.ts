@@ -6,6 +6,9 @@ import { FarcasterService } from './farcaster.service';
 import { LoggingService } from './logging.service';
 import { ActionType } from './scenario.schema';
 import { LogStatus } from './log.schema';
+import { AccountService } from './account.service';
+import { SignatureHeaderService } from './signature-header.service';
+import { GameRecordService } from './game-record.service';
 
 interface ActionJobDataAction {
   type: ActionType;
@@ -26,6 +29,9 @@ export class ActionProcessor {
   constructor(
     private readonly farcasterService: FarcasterService,
     private readonly loggingService: LoggingService,
+    private readonly accountService: AccountService,
+    private readonly signatureHeaderService: SignatureHeaderService,
+    private readonly gameRecordService: GameRecordService,
   ) {}
 
   @Process()
@@ -34,11 +40,13 @@ export class ActionProcessor {
     try {
       let result: unknown;
       switch (action.type) {
-        case ActionType.GET_FEED: {
+        case ActionType.GET_FEED:
+        case 'GetFeed': {
           result = await this.farcasterService.getFeed(encryptedToken);
           break;
         }
-        case ActionType.LIKE_CAST: {
+        case ActionType.LIKE_CAST:
+        case 'LikeCast': {
           const likeMethod = action.config['likeMethod'] as string;
           let castHash: string | null = null;
 
@@ -65,7 +73,8 @@ export class ActionProcessor {
           result = await this.farcasterService.likeCast(encryptedToken, castHash);
           break;
         }
-        case ActionType.RECAST_CAST: {
+        case ActionType.RECAST_CAST:
+        case 'RecastCast': {
           const recastMethod = action.config['likeMethod'] as string;
           let castHash: string | null = null;
 
@@ -90,13 +99,15 @@ export class ActionProcessor {
           result = await this.farcasterService.recastCast(encryptedToken, castHash);
           break;
         }
-        case ActionType.DELAY: {
+        case ActionType.DELAY:
+        case 'Delay': {
           const delayMs: number = typeof action.config['delayMs'] === 'number' ? (action.config['delayMs'] as number) : 5000;
           await this.sleep(delayMs);
           result = { success: true, delayMs };
           break;
         }
-        case ActionType.JOIN_CHANNEL: {
+        case ActionType.JOIN_CHANNEL:
+        case 'JoinChannel': {
           const channelKey = action.config['channelKey'] as string;
           const inviteCode = action.config['inviteCode'] as string;
           if (!channelKey || !inviteCode) {
@@ -105,7 +116,8 @@ export class ActionProcessor {
           result = await this.farcasterService.joinChannel(encryptedToken, channelKey, inviteCode);
           break;
         }
-        case ActionType.PIN_MINI_APP: {
+        case ActionType.PIN_MINI_APP:
+        case 'PinMiniApp': {
           const domain = action.config['domain'] as string;
           if (!domain) {
             throw new Error('Missing domain for PIN_MINI_APP action');
@@ -113,7 +125,8 @@ export class ActionProcessor {
           result = await this.farcasterService.pinMiniApp(encryptedToken, domain);
           break;
         }
-        case ActionType.FOLLOW_USER: {
+        case ActionType.FOLLOW_USER:
+        case 'FollowUser': {
           const userLink = action.config['userLink'] as string;
           if (!userLink) {
             throw new Error('Missing userLink for FOLLOW_USER action');
@@ -137,6 +150,76 @@ export class ActionProcessor {
           
           result = await this.farcasterService.followUser(encryptedToken, targetFid);
           break;
+        }
+        case ActionType.UPDATE_WALLET:
+        case 'UpdateWallet': {
+          const updatedAccount = await this.accountService.updateWalletAndUsername(accountId);
+          result = {
+            success: true,
+            walletAddress: updatedAccount.walletAddress,
+            username: updatedAccount.username,
+          };
+          break;
+        }
+        case ActionType.CREATE_RECORD_GAME:
+        case 'CreateRecordGame': {
+          const gameLabel = action.config['gameLabel'] as string;
+          if (!gameLabel) {
+            throw new Error('Missing gameLabel for CREATE_RECORD_GAME action');
+          }
+          // Get wallet from account service (ensures updated value)
+          const account = await this.accountService.findOne(accountId);
+          const wallet = account.walletAddress;
+          if (!wallet) {
+            throw new Error('Account has no walletAddress');
+          }
+          // Get privy token by label (decrypted)
+          const privyToken = await this.accountService.getDecryptedPrivyToken(accountId, gameLabel);
+          // Build payload and headers
+          const payload = JSON.stringify({ wallet });
+          // Signature header via SignatureHeaderService - injected via module
+          const apiKey = process.env.RPC_VERSION_API_KEY || '';
+          const secret = process.env.RPC_VERSION_SECRET || process.env.RPC_VERSION_SECRET_KEY || '';
+          if (!apiKey || !secret) {
+            throw new Error('Missing RPC_VERSION_API_KEY or RPC_VERSION_SECRET in env');
+          }
+          const signature = this.signatureHeaderService.generateSignature(apiKey, secret, payload);
+          if (!signature) {
+            throw new Error('Failed to generate signature');
+          }
+          // Perform HTTP call via FarcasterService httpService (reuse axios instance)
+          const axios = await import('axios');
+          const response = await axios.default.post(
+            'https://maze-runner-lab-api.gfun.top/api/v1/bot/signature',
+            { wallet },
+            {
+              headers: {
+                'accept': '*/*',
+                'x-api-key': apiKey,
+                'signature': signature,
+                'Authorization': `Bearer ${privyToken}`,
+                'Content-Type': 'application/json',
+              },
+              timeout: 20000,
+            },
+          );
+          // Save log as UNUSED status
+          await this.loggingService.createLog({
+            accountId: new Types.ObjectId(accountId),
+            scenarioId: new Types.ObjectId(scenarioId),
+            actionType: action.type,
+            status: LogStatus.UNUSED,
+            result: response.data as Record<string, unknown>,
+          });
+          // Persist as unused game record
+          await this.gameRecordService.createUnused({
+            accountId,
+            gameLabel,
+            apiResponse: response.data as Record<string, unknown>,
+          });
+          result = response.data as unknown;
+          // Return early since we already logged UNUSED and saved record
+          return { ...(previousResults || {}), [action.type]: { CreateRecordGame: response.data } };
         }
         default: {
           const neverType: never = action.type as never;

@@ -17,23 +17,34 @@ const farcaster_service_1 = require("./farcaster.service");
 const logging_service_1 = require("./logging.service");
 const scenario_schema_1 = require("./scenario.schema");
 const log_schema_1 = require("./log.schema");
+const account_service_1 = require("./account.service");
+const signature_header_service_1 = require("./signature-header.service");
+const game_record_service_1 = require("./game-record.service");
 let ActionProcessor = class ActionProcessor {
     farcasterService;
     loggingService;
-    constructor(farcasterService, loggingService) {
+    accountService;
+    signatureHeaderService;
+    gameRecordService;
+    constructor(farcasterService, loggingService, accountService, signatureHeaderService, gameRecordService) {
         this.farcasterService = farcasterService;
         this.loggingService = loggingService;
+        this.accountService = accountService;
+        this.signatureHeaderService = signatureHeaderService;
+        this.gameRecordService = gameRecordService;
     }
     async processAction(job) {
         const { accountId, scenarioId, action, encryptedToken, previousResults } = job.data;
         try {
             let result;
             switch (action.type) {
-                case scenario_schema_1.ActionType.GET_FEED: {
+                case scenario_schema_1.ActionType.GET_FEED:
+                case 'GetFeed': {
                     result = await this.farcasterService.getFeed(encryptedToken);
                     break;
                 }
-                case scenario_schema_1.ActionType.LIKE_CAST: {
+                case scenario_schema_1.ActionType.LIKE_CAST:
+                case 'LikeCast': {
                     const likeMethod = action.config['likeMethod'];
                     let castHash = null;
                     if (likeMethod === 'url') {
@@ -57,7 +68,8 @@ let ActionProcessor = class ActionProcessor {
                     result = await this.farcasterService.likeCast(encryptedToken, castHash);
                     break;
                 }
-                case scenario_schema_1.ActionType.RECAST_CAST: {
+                case scenario_schema_1.ActionType.RECAST_CAST:
+                case 'RecastCast': {
                     const recastMethod = action.config['likeMethod'];
                     let castHash = null;
                     if (recastMethod === 'url') {
@@ -81,13 +93,15 @@ let ActionProcessor = class ActionProcessor {
                     result = await this.farcasterService.recastCast(encryptedToken, castHash);
                     break;
                 }
-                case scenario_schema_1.ActionType.DELAY: {
+                case scenario_schema_1.ActionType.DELAY:
+                case 'Delay': {
                     const delayMs = typeof action.config['delayMs'] === 'number' ? action.config['delayMs'] : 5000;
                     await this.sleep(delayMs);
                     result = { success: true, delayMs };
                     break;
                 }
-                case scenario_schema_1.ActionType.JOIN_CHANNEL: {
+                case scenario_schema_1.ActionType.JOIN_CHANNEL:
+                case 'JoinChannel': {
                     const channelKey = action.config['channelKey'];
                     const inviteCode = action.config['inviteCode'];
                     if (!channelKey || !inviteCode) {
@@ -96,7 +110,8 @@ let ActionProcessor = class ActionProcessor {
                     result = await this.farcasterService.joinChannel(encryptedToken, channelKey, inviteCode);
                     break;
                 }
-                case scenario_schema_1.ActionType.PIN_MINI_APP: {
+                case scenario_schema_1.ActionType.PIN_MINI_APP:
+                case 'PinMiniApp': {
                     const domain = action.config['domain'];
                     if (!domain) {
                         throw new Error('Missing domain for PIN_MINI_APP action');
@@ -104,7 +119,8 @@ let ActionProcessor = class ActionProcessor {
                     result = await this.farcasterService.pinMiniApp(encryptedToken, domain);
                     break;
                 }
-                case scenario_schema_1.ActionType.FOLLOW_USER: {
+                case scenario_schema_1.ActionType.FOLLOW_USER:
+                case 'FollowUser': {
                     const userLink = action.config['userLink'];
                     if (!userLink) {
                         throw new Error('Missing userLink for FOLLOW_USER action');
@@ -122,6 +138,64 @@ let ActionProcessor = class ActionProcessor {
                     }
                     result = await this.farcasterService.followUser(encryptedToken, targetFid);
                     break;
+                }
+                case scenario_schema_1.ActionType.UPDATE_WALLET:
+                case 'UpdateWallet': {
+                    const updatedAccount = await this.accountService.updateWalletAndUsername(accountId);
+                    result = {
+                        success: true,
+                        walletAddress: updatedAccount.walletAddress,
+                        username: updatedAccount.username,
+                    };
+                    break;
+                }
+                case scenario_schema_1.ActionType.CREATE_RECORD_GAME:
+                case 'CreateRecordGame': {
+                    const gameLabel = action.config['gameLabel'];
+                    if (!gameLabel) {
+                        throw new Error('Missing gameLabel for CREATE_RECORD_GAME action');
+                    }
+                    const account = await this.accountService.findOne(accountId);
+                    const wallet = account.walletAddress;
+                    if (!wallet) {
+                        throw new Error('Account has no walletAddress');
+                    }
+                    const privyToken = await this.accountService.getDecryptedPrivyToken(accountId, gameLabel);
+                    const payload = JSON.stringify({ wallet });
+                    const apiKey = process.env.RPC_VERSION_API_KEY || '';
+                    const secret = process.env.RPC_VERSION_SECRET || process.env.RPC_VERSION_SECRET_KEY || '';
+                    if (!apiKey || !secret) {
+                        throw new Error('Missing RPC_VERSION_API_KEY or RPC_VERSION_SECRET in env');
+                    }
+                    const signature = this.signatureHeaderService.generateSignature(apiKey, secret, payload);
+                    if (!signature) {
+                        throw new Error('Failed to generate signature');
+                    }
+                    const axios = await Promise.resolve().then(() => require('axios'));
+                    const response = await axios.default.post('https://maze-runner-lab-api.gfun.top/api/v1/bot/signature', { wallet }, {
+                        headers: {
+                            'accept': '*/*',
+                            'x-api-key': apiKey,
+                            'signature': signature,
+                            'Authorization': `Bearer ${privyToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        timeout: 20000,
+                    });
+                    await this.loggingService.createLog({
+                        accountId: new mongoose_1.Types.ObjectId(accountId),
+                        scenarioId: new mongoose_1.Types.ObjectId(scenarioId),
+                        actionType: action.type,
+                        status: log_schema_1.LogStatus.UNUSED,
+                        result: response.data,
+                    });
+                    await this.gameRecordService.createUnused({
+                        accountId,
+                        gameLabel,
+                        apiResponse: response.data,
+                    });
+                    result = response.data;
+                    return { ...(previousResults || {}), [action.type]: { CreateRecordGame: response.data } };
                 }
                 default: {
                     const neverType = action.type;
@@ -163,6 +237,9 @@ exports.ActionProcessor = ActionProcessor = __decorate([
     (0, common_1.Injectable)(),
     (0, bull_1.Processor)('actions'),
     __metadata("design:paramtypes", [farcaster_service_1.FarcasterService,
-        logging_service_1.LoggingService])
+        logging_service_1.LoggingService,
+        account_service_1.AccountService,
+        signature_header_service_1.SignatureHeaderService,
+        game_record_service_1.GameRecordService])
 ], ActionProcessor);
 //# sourceMappingURL=action.processor.js.map

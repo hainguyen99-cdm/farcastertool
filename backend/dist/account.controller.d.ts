@@ -1,4 +1,4 @@
-import { AccountService, CreateAccountDto, ImportAccountDto, UpdateAccountDto } from './account.service';
+import { AccountService, CreateAccountDto, ImportAccountDto, UpdateAccountDto, AddPrivyTokenDto } from './account.service';
 export declare class AccountController {
     private readonly accountService;
     constructor(accountService: AccountService);
@@ -15,4 +15,7 @@ export declare class AccountController {
         success: number;
         errors: string[];
     }>;
+    updateWalletAndUsername(id: string): Promise<unknown>;
+    addPrivyToken(id: string, body: AddPrivyTokenDto): Promise<unknown>;
+    removePrivyToken(id: string, gameLabel: string): Promise<unknown>;
 }

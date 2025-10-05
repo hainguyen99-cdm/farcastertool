@@ -8,12 +8,20 @@ import ActionStatusCard, { ActionResult } from './components/action-status-card'
 
 type AccountStatus = 'Active' | 'Expired' | 'Error' | string;
 
+interface PrivyToken {
+  readonly gameLabel: string;
+  readonly encryptedPrivyToken: string;
+}
+
 interface Account {
   readonly _id: string;
   readonly name: string;
   readonly status: AccountStatus;
   readonly lastUsed?: string | null;
   readonly error?: string;
+  readonly walletAddress?: string;
+  readonly username?: string;
+  readonly privyTokens?: PrivyToken[];
 }
 
 const getStatusBadgeClasses = (status: AccountStatus): string => {
@@ -49,6 +57,8 @@ const AccountsPage: React.FC = () => {
   const [currentAction, setCurrentAction] = useState<string | null>(null);
   const [currentActionIndex, setCurrentActionIndex] = useState<number>(0);
   const [totalActions, setTotalActions] = useState<number>(0);
+  const [isUpdatingWallet, setIsUpdatingWallet] = useState<boolean>(false);
+  const [updatingAccountId, setUpdatingAccountId] = useState<string | null>(null);
 
   const handleOpenAdd = (): void => setIsAddOpen(true);
   const handleOpenImport = (): void => setIsImportOpen(true);
@@ -84,7 +94,14 @@ const AccountsPage: React.FC = () => {
     if (!editAccountId) return undefined;
     const target = accounts.find((a) => a._id === editAccountId);
     if (!target) return undefined;
-    return { name: target.name, status: (target.status as 'Active' | 'Expired' | 'Error') };
+    return { 
+      name: target.name, 
+      status: (target.status as 'Active' | 'Expired' | 'Error'),
+      privyTokens: target.privyTokens?.map(pt => ({
+        gameLabel: pt.gameLabel,
+        privyToken: '••••••••' // Don't show actual token values
+      })) || []
+    };
   }, [accounts, editAccountId]);
 
   const handleSubmitAdd = async (values: AccountFormInput): Promise<void> => {
@@ -204,6 +221,25 @@ const AccountsPage: React.FC = () => {
     setTotalActions(0);
   };
 
+  const handleUpdateWalletAndUsername = async (accountId: string): Promise<void> => {
+    setIsUpdatingWallet(true);
+    setUpdatingAccountId(accountId);
+    try {
+      const response = await fetch(`/api/accounts/${encodeURIComponent(accountId)}/update-wallet-username`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to update wallet and username');
+      await handleFetchAccounts();
+    } catch (error) {
+      console.error('Error updating wallet and username:', error);
+      // You could add a toast notification here
+    } finally {
+      setIsUpdatingWallet(false);
+      setUpdatingAccountId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="mx-auto max-w-6xl p-6">
@@ -294,6 +330,8 @@ const AccountsPage: React.FC = () => {
             <tr>
               <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Name</th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Status</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Username</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Wallet Address</th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Last Used</th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Actions</th>
             </tr>
@@ -307,6 +345,10 @@ const AccountsPage: React.FC = () => {
                     {account.status}
                   </span>
                 </td>
+                <td className="px-4 py-3 text-sm text-gray-700">{account.username || '-'}</td>
+                <td className="px-4 py-3 text-sm text-gray-700 font-mono text-xs">
+                  {account.walletAddress ? `${account.walletAddress.slice(0, 6)}...${account.walletAddress.slice(-4)}` : '-'}
+                </td>
                 <td className="px-4 py-3 text-sm text-gray-700">{formatLastUsed(account.lastUsed)}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -316,6 +358,17 @@ const AccountsPage: React.FC = () => {
                       onExecute={handleExecuteScript}
                       isExecuting={isExecutingScript}
                     />
+                    <button
+                      type="button"
+                      className="rounded-md border border-green-200 bg-white px-2.5 py-1.5 text-xs font-medium text-green-700 hover:bg-green-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 disabled:opacity-50"
+                      aria-label={`Update wallet and username for ${account.name}`}
+                      tabIndex={0}
+                      onClick={() => handleUpdateWalletAndUsername(account._id)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleUpdateWalletAndUsername(account._id); }}
+                      disabled={isUpdatingWallet && updatingAccountId === account._id}
+                    >
+                      {isUpdatingWallet && updatingAccountId === account._id ? 'Updating...' : 'Update Wallet'}
+                    </button>
                     <button
                       type="button"
                       className="rounded-md border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
@@ -342,7 +395,7 @@ const AccountsPage: React.FC = () => {
             ))}
             {accounts.length === 0 && !hasError ? (
               <tr>
-                <td className="px-4 py-6 text-sm text-gray-500" colSpan={4}>No accounts found.</td>
+                <td className="px-4 py-6 text-sm text-gray-500" colSpan={6}>No accounts found.</td>
               </tr>
             ) : null}
           </tbody>

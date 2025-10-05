@@ -3,6 +3,13 @@ import { forwardJson } from '../../_lib/backend';
 
 export const dynamic = 'force-dynamic';
 
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
+  const { id } = await params;
+  const res = await forwardJson(`/accounts/${encodeURIComponent(id)}`, { method: 'GET' });
+  const data = await res.text();
+  return new Response(data, { status: res.status, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' } });
+}
+
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   const { id } = await params;
   const body = await req.text();

@@ -8,6 +8,7 @@ import { ActionType } from './scenario.schema';
 export enum LogStatus {
   SUCCESS = 'Success',
   FAILURE = 'Failure',
+  UNUSED = 'Unused',
 }
 
 /**

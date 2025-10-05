@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Account, AccountStatus } from './account.schema';
+import { Account, AccountStatus, PrivyToken } from './account.schema';
 import { EncryptionService } from './encryption.service';
+import { FarcasterService } from './farcaster.service';
 
 export interface CreateAccountDto {
   name: string;
@@ -13,6 +14,7 @@ export interface UpdateAccountDto {
   name?: string;
   token?: string;
   status?: AccountStatus;
+  privyTokens?: PrivyTokenDto[];
 }
 
 export interface ImportAccountDto {
@@ -21,11 +23,22 @@ export interface ImportAccountDto {
   status?: AccountStatus;
 }
 
+export interface PrivyTokenDto {
+  gameLabel: string;
+  privyToken: string;
+}
+
+export interface AddPrivyTokenDto {
+  gameLabel: string;
+  privyToken: string;
+}
+
 @Injectable()
 export class AccountService {
   constructor(
     @InjectModel(Account.name) private accountModel: Model<Account>,
     private encryptionService: EncryptionService,
+    private farcasterService: FarcasterService,
   ) {}
 
   async create(createAccountDto: CreateAccountDto): Promise<Account> {
@@ -58,6 +71,15 @@ export class AccountService {
     if (updateAccountDto.token) {
       updateData.encryptedToken = this.encryptionService.encrypt(updateAccountDto.token);
       delete updateData.token;
+    }
+
+    // Handle privy tokens if they exist in the update data
+    if (updateAccountDto.privyTokens) {
+      const encryptedPrivyTokens = updateAccountDto.privyTokens.map(pt => ({
+        gameLabel: pt.gameLabel,
+        encryptedPrivyToken: this.encryptionService.encrypt(pt.privyToken)
+      }));
+      updateData.privyTokens = encryptedPrivyTokens;
     }
 
     const account = await this.accountModel
@@ -126,6 +148,96 @@ export class AccountService {
     }
 
     return { success, errors };
+  }
+
+  async updateWalletAndUsername(id: string): Promise<Account> {
+    const account = await this.findOne(id);
+    
+    try {
+      const { walletAddress, username } = await this.farcasterService.getOnboardingState(account.encryptedToken);
+      
+      const updatedAccount = await this.accountModel
+        .findByIdAndUpdate(
+          id,
+          { 
+            walletAddress,
+            username,
+            lastUsed: new Date(),
+          },
+          { new: true }
+        )
+        .exec();
+
+      if (!updatedAccount) {
+        throw new NotFoundException(`Account with ID ${id} not found`);
+      }
+
+      return updatedAccount;
+    } catch (error) {
+      // Update account status to error if the API call fails
+      await this.updateStatus(id, AccountStatus.ERROR, `Failed to update wallet and username: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async addPrivyToken(id: string, addPrivyTokenDto: AddPrivyTokenDto): Promise<Account> {
+    const account = await this.findOne(id);
+    
+    const encryptedPrivyToken = this.encryptionService.encrypt(addPrivyTokenDto.privyToken);
+    
+    const privyToken: PrivyToken = {
+      gameLabel: addPrivyTokenDto.gameLabel,
+      encryptedPrivyToken,
+    };
+    
+    const updatedAccount = await this.accountModel
+      .findByIdAndUpdate(
+        id,
+        { 
+          $push: { 
+            privyTokens: {
+              gameLabel: privyToken.gameLabel,
+              encryptedPrivyToken: privyToken.encryptedPrivyToken
+            }
+          } 
+        },
+        { new: true }
+      )
+      .exec();
+
+    if (!updatedAccount) {
+      throw new NotFoundException(`Account with ID ${id} not found`);
+    }
+    return updatedAccount;
+  }
+
+  async removePrivyToken(id: string, gameLabel: string): Promise<Account> {
+    const account = await this.findOne(id);
+    
+    const updatedAccount = await this.accountModel
+      .findByIdAndUpdate(
+        id,
+        { $pull: { privyTokens: { gameLabel } } },
+        { new: true }
+      )
+      .exec();
+
+    if (!updatedAccount) {
+      throw new NotFoundException(`Account with ID ${id} not found`);
+    }
+
+    return updatedAccount;
+  }
+
+  async getDecryptedPrivyToken(id: string, gameLabel: string): Promise<string> {
+    const account = await this.findOne(id);
+    const privyToken = account.privyTokens.find(pt => pt.gameLabel === gameLabel);
+    
+    if (!privyToken) {
+      throw new NotFoundException(`Privy token with game label "${gameLabel}" not found for account ${id}`);
+    }
+    
+    return this.encryptionService.decrypt(privyToken.encryptedPrivyToken);
   }
 }
 

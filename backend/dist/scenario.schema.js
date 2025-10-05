@@ -20,6 +20,8 @@ var ActionType;
     ActionType["DELAY"] = "Delay";
     ActionType["JOIN_CHANNEL"] = "JoinChannel";
     ActionType["FOLLOW_USER"] = "FollowUser";
+    ActionType["UPDATE_WALLET"] = "UpdateWallet";
+    ActionType["CREATE_RECORD_GAME"] = "CreateRecordGame";
 })(ActionType || (exports.ActionType = ActionType = {}));
 let Action = class Action {
     type;

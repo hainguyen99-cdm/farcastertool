@@ -6,6 +6,17 @@ export enum AccountStatus {
   ERROR = 'Error',
 }
 
+@Schema({ _id: true })
+export class PrivyToken {
+  @Prop({ required: true })
+  gameLabel: string;
+  
+  @Prop({ required: true })
+  encryptedPrivyToken: string;
+}
+
+const PrivyTokenSchema = SchemaFactory.createForClass(PrivyToken);
+
 @Schema()
 export class Account {
   @Prop({ required: true })
@@ -22,6 +33,15 @@ export class Account {
   
   @Prop()
   error: string;
+  
+  @Prop()
+  walletAddress: string;
+  
+  @Prop()
+  username: string;
+  
+  @Prop({ type: [PrivyTokenSchema], default: [] })
+  privyTokens: PrivyToken[];
 }
 
 export const AccountSchema = SchemaFactory.createForClass(Account);

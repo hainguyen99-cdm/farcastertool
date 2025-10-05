@@ -2,7 +2,8 @@ import { Types } from 'mongoose';
 import { ActionType } from './scenario.schema';
 export declare enum LogStatus {
     SUCCESS = "Success",
-    FAILURE = "Failure"
+    FAILURE = "Failure",
+    UNUSED = "Unused"
 }
 export declare class Log {
     accountId: Types.ObjectId;

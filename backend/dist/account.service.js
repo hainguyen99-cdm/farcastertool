@@ -18,12 +18,15 @@ const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const account_schema_1 = require("./account.schema");
 const encryption_service_1 = require("./encryption.service");
+const farcaster_service_1 = require("./farcaster.service");
 let AccountService = class AccountService {
     accountModel;
     encryptionService;
-    constructor(accountModel, encryptionService) {
+    farcasterService;
+    constructor(accountModel, encryptionService, farcasterService) {
         this.accountModel = accountModel;
         this.encryptionService = encryptionService;
+        this.farcasterService = farcasterService;
     }
     async create(createAccountDto) {
         const encryptedToken = this.encryptionService.encrypt(createAccountDto.token);
@@ -49,6 +52,13 @@ let AccountService = class AccountService {
         if (updateAccountDto.token) {
             updateData.encryptedToken = this.encryptionService.encrypt(updateAccountDto.token);
             delete updateData.token;
+        }
+        if (updateAccountDto.privyTokens) {
+            const encryptedPrivyTokens = updateAccountDto.privyTokens.map(pt => ({
+                gameLabel: pt.gameLabel,
+                encryptedPrivyToken: this.encryptionService.encrypt(pt.privyToken)
+            }));
+            updateData.privyTokens = encryptedPrivyTokens;
         }
         const account = await this.accountModel
             .findByIdAndUpdate(id, updateData, { new: true })
@@ -104,12 +114,74 @@ let AccountService = class AccountService {
         }
         return { success, errors };
     }
+    async updateWalletAndUsername(id) {
+        const account = await this.findOne(id);
+        try {
+            const { walletAddress, username } = await this.farcasterService.getOnboardingState(account.encryptedToken);
+            const updatedAccount = await this.accountModel
+                .findByIdAndUpdate(id, {
+                walletAddress,
+                username,
+                lastUsed: new Date(),
+            }, { new: true })
+                .exec();
+            if (!updatedAccount) {
+                throw new common_1.NotFoundException(`Account with ID ${id} not found`);
+            }
+            return updatedAccount;
+        }
+        catch (error) {
+            await this.updateStatus(id, account_schema_1.AccountStatus.ERROR, `Failed to update wallet and username: ${error.message}`);
+            throw error;
+        }
+    }
+    async addPrivyToken(id, addPrivyTokenDto) {
+        const account = await this.findOne(id);
+        const encryptedPrivyToken = this.encryptionService.encrypt(addPrivyTokenDto.privyToken);
+        const privyToken = {
+            gameLabel: addPrivyTokenDto.gameLabel,
+            encryptedPrivyToken,
+        };
+        const updatedAccount = await this.accountModel
+            .findByIdAndUpdate(id, {
+            $push: {
+                privyTokens: {
+                    gameLabel: privyToken.gameLabel,
+                    encryptedPrivyToken: privyToken.encryptedPrivyToken
+                }
+            }
+        }, { new: true })
+            .exec();
+        if (!updatedAccount) {
+            throw new common_1.NotFoundException(`Account with ID ${id} not found`);
+        }
+        return updatedAccount;
+    }
+    async removePrivyToken(id, gameLabel) {
+        const account = await this.findOne(id);
+        const updatedAccount = await this.accountModel
+            .findByIdAndUpdate(id, { $pull: { privyTokens: { gameLabel } } }, { new: true })
+            .exec();
+        if (!updatedAccount) {
+            throw new common_1.NotFoundException(`Account with ID ${id} not found`);
+        }
+        return updatedAccount;
+    }
+    async getDecryptedPrivyToken(id, gameLabel) {
+        const account = await this.findOne(id);
+        const privyToken = account.privyTokens.find(pt => pt.gameLabel === gameLabel);
+        if (!privyToken) {
+            throw new common_1.NotFoundException(`Privy token with game label "${gameLabel}" not found for account ${id}`);
+        }
+        return this.encryptionService.decrypt(privyToken.encryptedPrivyToken);
+    }
 };
 exports.AccountService = AccountService;
 exports.AccountService = AccountService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(account_schema_1.Account.name)),
     __metadata("design:paramtypes", [mongoose_2.Model,
-        encryption_service_1.EncryptionService])
+        encryption_service_1.EncryptionService,
+        farcaster_service_1.FarcasterService])
 ], AccountService);
 //# sourceMappingURL=account.service.js.map
