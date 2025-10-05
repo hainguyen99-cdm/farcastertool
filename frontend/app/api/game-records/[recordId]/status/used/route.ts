@@ -4,7 +4,8 @@ import { forwardJson } from '../../../../_lib/backend';
 /**
  * PATCH /api/game-records/[recordId]/status/used
  * 
- * Updates a game record's status to "Used" by recordId.
+ * Proxy endpoint to update a game record's status to "Used" by recordId.
+ * Forwards the request to the backend and returns the response.
  * 
  * @param recordId - The record ID to update (e.g., 68de4ed95a38e50487dc90e8)
  * @returns Updated game record object or null if not found

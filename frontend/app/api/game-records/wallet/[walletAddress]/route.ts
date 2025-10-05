@@ -4,11 +4,14 @@ import { forwardJson } from '../../../_lib/backend';
 /**
  * GET /api/game-records/wallet/[walletAddress]
  * 
- * Returns unused game record data for a specific wallet address.
- * Only returns records with status "Unused" and extracts the data portion from apiResponse.
+ * Proxy endpoint to get unused game record data for a specific wallet address.
+ * Forwards the request to the backend and returns the response.
  * 
  * @param walletAddress - The wallet address to search for (e.g., 0xBffB550F5980598FBeCb80c0078aB38eF5e2590b)
- * @returns Array of data objects containing game record information
+ * @returns Array of data objects from unused game records
+ * 
+ * Example request:
+ * GET /api/game-records/wallet/0xBffB550F5980598FBeCb80c0078aB38eF5e2590b
  * 
  * Example response:
  * [
