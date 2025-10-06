@@ -4,9 +4,8 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Robust CORS configuration to support local/lan dev and proxies
+  // CORS: allow all frontends (proxy-friendly). If you later need cookies, switch to echoing the exact Origin.
   app.enableCors({
-    // Allow all websites
     origin: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
@@ -21,14 +20,7 @@ async function bootstrap() {
     credentials: false,
   });
   
-  // Ensure preflight responses succeed when proxied
-  app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-      res.status(204).end();
-      return;
-    }
-    next();
-  });
+  // No extra middleware needed; Nest will include CORS headers on preflight
   
   await app.listen(process.env.PORT ?? 3002);
 }
