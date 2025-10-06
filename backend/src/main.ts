@@ -6,11 +6,11 @@ async function bootstrap() {
   
   // Simple and effective CORS configuration
   app.enableCors({
-    origin: '*',
-    methods: '*',
-    allowedHeaders: '*',
-  });
-  
+    origin: ['http://localhost:3000'], // FE của bạn
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type'],
+    credentials: false, // không cần vì không có Authorization/cookie
+  })
   
   await app.listen(process.env.PORT ?? 3002);
 }
