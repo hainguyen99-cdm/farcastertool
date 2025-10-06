@@ -126,7 +126,7 @@ const AccountsPage: React.FC = () => {
     setIsSubmittingEdit(true);
     try {
       const response = await fetch(`/api/accounts/${encodeURIComponent(editAccountId)}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
       });
