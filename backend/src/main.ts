@@ -7,7 +7,7 @@ async function bootstrap() {
   // Simple and effective CORS configuration
   app.enableCors({
     origin: ['http://localhost:3000'], // FE của bạn
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS','PATCH'],
     allowedHeaders: ['Content-Type'],
     credentials: false, // không cần vì không có Authorization/cookie
   })
