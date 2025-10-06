@@ -6,11 +6,11 @@ async function bootstrap() {
   
   // Simple and effective CORS configuration
   app.enableCors({
-    origin: ['http://localhost:3000'],
+    origin: '*',
     methods: '*',
     allowedHeaders: '*',
-    credentials: true,
   });
+  
   
   await app.listen(process.env.PORT ?? 3002);
 }
