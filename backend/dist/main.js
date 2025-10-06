@@ -5,12 +5,7 @@ const app_module_1 = require("./app.module");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.enableCors({
-        origin: [
-            'http://localhost:3000',
-            'http://localhost:3001',
-            'http://54.151.242.118:3000',
-            'https://54.151.242.118:3000',
-        ],
+        origin: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: [
             'Origin',
@@ -20,8 +15,12 @@ async function bootstrap() {
             'Authorization',
             'Cache-Control',
             'Pragma',
+            'Access-Control-Allow-Origin',
+            'Access-Control-Allow-Headers',
+            'Access-Control-Allow-Methods',
         ],
         credentials: true,
+        optionsSuccessStatus: 200,
     });
     await app.listen(process.env.PORT ?? 3002);
 }
