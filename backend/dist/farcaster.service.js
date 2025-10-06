@@ -287,10 +287,74 @@ let FarcasterService = class FarcasterService {
             if (!walletAddress) {
                 throw new Error('Missing wallet address in user details');
             }
-            return { walletAddress, username };
+            return { walletAddress, username, fid };
         }
         catch (err) {
             throw new common_1.HttpException('Failed to get onboarding state', this.resolveStatus(err));
+        }
+    }
+    async sendMiniAppEvent(encryptedToken, domain, event, platformType = 'web') {
+        const token = this.encryptionService.decrypt(encryptedToken);
+        this.enforceRateLimit(`sendMiniAppEvent:${encryptedToken}`);
+        try {
+            const response = await this.executeWithRetry(async () => (0, rxjs_1.firstValueFrom)(this.httpService.put(`${this.baseUrl}/v2/mini-app-event`, {
+                domain,
+                event,
+                platformType,
+            }, {
+                headers: {
+                    ...this.buildAuthHeaders(token),
+                    'accept': '*/*',
+                    'accept-language': 'en-US,en;q=0.9,vi;q=0.8',
+                    'fc-amplitude-device-id': '3jnphWn_51bkN0PY4XbYWq',
+                    'fc-amplitude-session-id': '1759718576589',
+                    'idempotency-key': '59b0d3e0-4278-0edd-0c61-d888452c14a7',
+                    'origin': 'https://farcaster.xyz',
+                    'priority': 'u=1, i',
+                    'referer': 'https://farcaster.xyz/',
+                    'sec-ch-ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"Windows"',
+                    'sec-fetch-dest': 'empty',
+                    'sec-fetch-mode': 'cors',
+                    'sec-fetch-site': 'same-site',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+                },
+            })));
+            return response.data;
+        }
+        catch (err) {
+            throw new common_1.HttpException('Failed to send mini app event', this.resolveStatus(err));
+        }
+    }
+    async sendAnalyticsEvents(encryptedToken, events) {
+        const token = this.encryptionService.decrypt(encryptedToken);
+        this.enforceRateLimit(`sendAnalyticsEvents:${encryptedToken}`);
+        try {
+            const response = await this.executeWithRetry(async () => (0, rxjs_1.firstValueFrom)(this.httpService.post(`${this.baseUrl}/v1/analytics-events`, { events }, {
+                headers: {
+                    ...this.buildAuthHeaders(token),
+                    'accept': '*/*',
+                    'accept-language': 'en-US,en;q=0.9,vi;q=0.8',
+                    'fc-amplitude-device-id': '3jnphWn_51bkN0PY4XbYWq',
+                    'fc-amplitude-session-id': '1759718576589',
+                    'idempotency-key': 'be0fd598-346b-31b0-59fd-a196e50defda',
+                    'origin': 'https://farcaster.xyz',
+                    'priority': 'u=1, i',
+                    'referer': 'https://farcaster.xyz/',
+                    'sec-ch-ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"Windows"',
+                    'sec-fetch-dest': 'empty',
+                    'sec-fetch-mode': 'cors',
+                    'sec-fetch-site': 'same-site',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+                },
+            })));
+            return response.data;
+        }
+        catch (err) {
+            throw new common_1.HttpException('Failed to send analytics events', this.resolveStatus(err));
         }
     }
     async executeWithRetry(operation) {

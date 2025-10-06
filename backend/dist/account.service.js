@@ -117,11 +117,12 @@ let AccountService = class AccountService {
     async updateWalletAndUsername(id) {
         const account = await this.findOne(id);
         try {
-            const { walletAddress, username } = await this.farcasterService.getOnboardingState(account.encryptedToken);
+            const { walletAddress, username, fid } = await this.farcasterService.getOnboardingState(account.encryptedToken);
             const updatedAccount = await this.accountModel
                 .findByIdAndUpdate(id, {
                 walletAddress,
                 username,
+                fid,
                 lastUsed: new Date(),
             }, { new: true })
                 .exec();

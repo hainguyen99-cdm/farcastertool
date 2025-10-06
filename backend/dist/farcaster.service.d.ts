@@ -27,7 +27,14 @@ export declare class FarcasterService {
     getOnboardingState(encryptedToken: string): Promise<{
         walletAddress: string;
         username: string;
+        fid: number;
     }>;
+    sendMiniAppEvent(encryptedToken: string, domain: string, event: string, platformType?: string): Promise<unknown>;
+    sendAnalyticsEvents(encryptedToken: string, events: Array<{
+        type: string;
+        data: Record<string, unknown>;
+        ts: number;
+    }>): Promise<unknown>;
     private executeWithRetry;
     private enforceRateLimit;
     private isRetryableError;

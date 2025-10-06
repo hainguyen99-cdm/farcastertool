@@ -42,6 +42,7 @@ let Account = class Account {
     error;
     walletAddress;
     username;
+    fid;
     privyTokens;
 };
 exports.Account = Account;
@@ -73,6 +74,10 @@ __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
 ], Account.prototype, "username", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", Number)
+], Account.prototype, "fid", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: [PrivyTokenSchema], default: [] }),
     __metadata("design:type", Array)

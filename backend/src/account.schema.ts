@@ -40,6 +40,9 @@ export class Account {
   @Prop()
   username: string;
   
+  @Prop()
+  fid: number;
+  
   @Prop({ type: [PrivyTokenSchema], default: [] })
   privyTokens: PrivyToken[];
 }

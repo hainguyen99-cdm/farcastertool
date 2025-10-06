@@ -146,6 +146,7 @@ let ActionProcessor = class ActionProcessor {
                         success: true,
                         walletAddress: updatedAccount.walletAddress,
                         username: updatedAccount.username,
+                        fid: updatedAccount.fid,
                     };
                     break;
                 }
@@ -196,6 +197,42 @@ let ActionProcessor = class ActionProcessor {
                     });
                     result = response.data;
                     return { ...(previousResults || {}), [action.type]: { CreateRecordGame: response.data } };
+                }
+                case scenario_schema_1.ActionType.MINI_APP_EVENT:
+                case 'MiniAppEvent': {
+                    const domain = action.config['domain'];
+                    const event = action.config['event'];
+                    const platformType = action.config['platformType'];
+                    if (!domain || !event) {
+                        throw new Error('Missing domain or event for MINI_APP_EVENT action');
+                    }
+                    result = await this.farcasterService.sendMiniAppEvent(encryptedToken, domain, event, platformType || 'web');
+                    break;
+                }
+                case scenario_schema_1.ActionType.ANALYTICS_EVENTS:
+                case 'AnalyticsEvents': {
+                    const frameDomain = action.config['frameDomain'];
+                    const frameName = action.config['frameName'];
+                    const frameUrl = action.config['frameUrl'];
+                    if (!frameDomain || !frameName || !frameUrl) {
+                        throw new Error('Missing frameDomain, frameName, or frameUrl for ANALYTICS_EVENTS action');
+                    }
+                    const account = await this.accountService.findOne(accountId);
+                    if (!account.fid) {
+                        throw new Error('Account FID not found. Please run UpdateWallet action first to get account FID.');
+                    }
+                    const events = [{
+                            type: 'frame-launch',
+                            data: {
+                                frameDomain,
+                                frameUrl,
+                                frameName,
+                                authorFid: account.fid
+                            },
+                            ts: Date.now()
+                        }];
+                    result = await this.farcasterService.sendAnalyticsEvents(encryptedToken, events);
+                    break;
                 }
                 default: {
                     const neverType = action.type;

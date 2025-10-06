@@ -154,7 +154,7 @@ export class AccountService {
     const account = await this.findOne(id);
     
     try {
-      const { walletAddress, username } = await this.farcasterService.getOnboardingState(account.encryptedToken);
+      const { walletAddress, username, fid } = await this.farcasterService.getOnboardingState(account.encryptedToken);
       
       const updatedAccount = await this.accountModel
         .findByIdAndUpdate(
@@ -162,6 +162,7 @@ export class AccountService {
           { 
             walletAddress,
             username,
+            fid,
             lastUsed: new Date(),
           },
           { new: true }

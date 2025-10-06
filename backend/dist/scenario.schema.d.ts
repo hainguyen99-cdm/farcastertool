@@ -7,7 +7,9 @@ export declare enum ActionType {
     JOIN_CHANNEL = "JoinChannel",
     FOLLOW_USER = "FollowUser",
     UPDATE_WALLET = "UpdateWallet",
-    CREATE_RECORD_GAME = "CreateRecordGame"
+    CREATE_RECORD_GAME = "CreateRecordGame",
+    MINI_APP_EVENT = "MiniAppEvent",
+    ANALYTICS_EVENTS = "AnalyticsEvents"
 }
 export type ActionConfig = Record<string, unknown>;
 export declare class Action {

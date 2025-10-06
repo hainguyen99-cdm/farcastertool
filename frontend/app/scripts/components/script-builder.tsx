@@ -35,7 +35,7 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
     setActions(script.actions);
   }, [script.actions]);
 
-  const availableTypes: ActionType[] = ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel', 'FollowUser', 'UpdateWallet', 'CreateRecordGame'];
+  const availableTypes: ActionType[] = ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel', 'FollowUser', 'UpdateWallet', 'CreateRecordGame', 'MiniAppEvent', 'AnalyticsEvents'];
 
   const handleAddAction = useCallback((): void => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -281,6 +281,109 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
                       }}
                     />
                     <p className="text-xs text-gray-500">Enter the full Farcaster user profile URL (e.g., https://farcaster.xyz/username).</p>
+                  </div>
+                </div>
+              )}
+              {action.type === 'MiniAppEvent' && (
+                <div className="grid max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor={`domain-${action.id}`} className="text-sm text-gray-700">Domain</label>
+                    <input
+                      id={`domain-${action.id}`}
+                      type="text"
+                      placeholder="maze.gfun.top"
+                      className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                      value={typeof action.config?.domain === 'string' ? action.config.domain as string : ''}
+                      onChange={(e) => {
+                        handleUpdateAction(action.id, {
+                          config: { ...action.config, domain: e.target.value }
+                        });
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor={`event-${action.id}`} className="text-sm text-gray-700">Event</label>
+                    <input
+                      id={`event-${action.id}`}
+                      type="text"
+                      placeholder="open"
+                      className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                      value={typeof action.config?.event === 'string' ? action.config.event as string : ''}
+                      onChange={(e) => {
+                        handleUpdateAction(action.id, {
+                          config: { ...action.config, event: e.target.value }
+                        });
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 sm:col-span-2">
+                    <label htmlFor={`platformType-${action.id}`} className="text-sm text-gray-700">Platform Type</label>
+                    <select
+                      id={`platformType-${action.id}`}
+                      className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                      value={typeof action.config?.platformType === 'string' ? action.config.platformType as string : 'web'}
+                      onChange={(e) => {
+                        handleUpdateAction(action.id, {
+                          config: { ...action.config, platformType: e.target.value }
+                        });
+                      }}
+                    >
+                      <option value="web">Web</option>
+                      <option value="mobile">Mobile</option>
+                    </select>
+                    <p className="text-xs text-gray-500">Send a mini app event to Farcaster (e.g., domain: maze.gfun.top, event: open).</p>
+                  </div>
+                </div>
+              )}
+              {action.type === 'AnalyticsEvents' && (
+                <div className="grid max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor={`frameDomain-${action.id}`} className="text-sm text-gray-700">Frame Domain</label>
+                    <input
+                      id={`frameDomain-${action.id}`}
+                      type="text"
+                      placeholder="maze.gfun.top"
+                      className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                      value={typeof action.config?.frameDomain === 'string' ? action.config.frameDomain as string : ''}
+                      onChange={(e) => {
+                        handleUpdateAction(action.id, {
+                          config: { ...action.config, frameDomain: e.target.value }
+                        });
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor={`frameName-${action.id}`} className="text-sm text-gray-700">Frame Name</label>
+                    <input
+                      id={`frameName-${action.id}`}
+                      type="text"
+                      placeholder="Maze Runner by Uptopia"
+                      className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                      value={typeof action.config?.frameName === 'string' ? action.config.frameName as string : ''}
+                      onChange={(e) => {
+                        handleUpdateAction(action.id, {
+                          config: { ...action.config, frameName: e.target.value }
+                        });
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 sm:col-span-2">
+                    <label htmlFor={`frameUrl-${action.id}`} className="text-sm text-gray-700">Frame URL</label>
+                    <input
+                      id={`frameUrl-${action.id}`}
+                      type="url"
+                      placeholder="https://maze.gfun.top"
+                      className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                      value={typeof action.config?.frameUrl === 'string' ? action.config.frameUrl as string : ''}
+                      onChange={(e) => {
+                        handleUpdateAction(action.id, {
+                          config: { ...action.config, frameUrl: e.target.value }
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Send analytics events to Farcaster. Type defaults to "frame-launch", timestamp is current time, and authorFid is automatically retrieved from account.
+                    </p>
                   </div>
                 </div>
               )}

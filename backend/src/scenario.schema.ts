@@ -13,6 +13,8 @@ export enum ActionType {
   FOLLOW_USER = 'FollowUser',
   UPDATE_WALLET = 'UpdateWallet',
   CREATE_RECORD_GAME = 'CreateRecordGame',
+  MINI_APP_EVENT = 'MiniAppEvent',
+  ANALYTICS_EVENTS = 'AnalyticsEvents',
 }
 
 /**

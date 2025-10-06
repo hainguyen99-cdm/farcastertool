@@ -22,6 +22,8 @@ var ActionType;
     ActionType["FOLLOW_USER"] = "FollowUser";
     ActionType["UPDATE_WALLET"] = "UpdateWallet";
     ActionType["CREATE_RECORD_GAME"] = "CreateRecordGame";
+    ActionType["MINI_APP_EVENT"] = "MiniAppEvent";
+    ActionType["ANALYTICS_EVENTS"] = "AnalyticsEvents";
 })(ActionType || (exports.ActionType = ActionType = {}));
 let Action = class Action {
     type;

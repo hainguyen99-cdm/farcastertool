@@ -21,6 +21,7 @@ interface Account {
   readonly error?: string;
   readonly walletAddress?: string;
   readonly username?: string;
+  readonly fid?: number;
   readonly privyTokens?: PrivyToken[];
 }
 
@@ -331,6 +332,7 @@ const AccountsPage: React.FC = () => {
               <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Name</th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Status</th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Username</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">FID</th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Wallet Address</th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Last Used</th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Actions</th>
@@ -346,6 +348,7 @@ const AccountsPage: React.FC = () => {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-700">{account.username || '-'}</td>
+                <td className="px-4 py-3 text-sm text-gray-700 font-mono">{account.fid || '-'}</td>
                 <td className="px-4 py-3 text-sm text-gray-700 font-mono text-xs">
                   {account.walletAddress ? `${account.walletAddress.slice(0, 6)}...${account.walletAddress.slice(-4)}` : '-'}
                 </td>
@@ -395,7 +398,7 @@ const AccountsPage: React.FC = () => {
             ))}
             {accounts.length === 0 && !hasError ? (
               <tr>
-                <td className="px-4 py-6 text-sm text-gray-500" colSpan={6}>No accounts found.</td>
+                <td className="px-4 py-6 text-sm text-gray-500" colSpan={7}>No accounts found.</td>
               </tr>
             ) : null}
           </tbody>
