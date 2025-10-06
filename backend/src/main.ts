@@ -6,20 +6,8 @@ async function bootstrap() {
   
   // Robust CORS configuration to support local/lan dev and proxies
   app.enableCors({
-    origin: (requestOrigin, callback) => {
-      // Allow SSR/no-origin requests
-      if (!requestOrigin) return callback(null, true);
-      const allowList = [
-        /^http:\/\/localhost:\d+$/,
-        /^http:\/\/127\.0\.0\.1:\d+$/,
-        /^http:\/\/192\.168\.[0-9]{1,3}\.[0-9]{1,3}(?::\d+)?$/,
-        /^http:\/\/10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(?::\d+)?$/,
-        /^http:\/\/54\.151\.242\.118:3000$/,
-        /^https:\/\/54\.151\.242\.118:3000$/,
-      ];
-      const isAllowed = allowList.some((rx) => rx.test(requestOrigin));
-      callback(null, isAllowed);
-    },
+    // Allow all websites
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Origin',
