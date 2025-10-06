@@ -34,6 +34,9 @@ const AccountForm: React.FC<AccountFormProps> = ({ mode, initialValues, isSubmit
   const [privyTokens, setPrivyTokens] = useState<PrivyTokenInput[]>([]);
   const [newGameLabel, setNewGameLabel] = useState<string>('');
   const [newPrivyToken, setNewPrivyToken] = useState<string>('');
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editGameLabel, setEditGameLabel] = useState<string>('');
+  const [editPrivyToken, setEditPrivyToken] = useState<string>('');
 
   useEffect(() => {
     setName(initialValues?.name ?? '');
@@ -57,6 +60,31 @@ const AccountForm: React.FC<AccountFormProps> = ({ mode, initialValues, isSubmit
 
   const handleRemovePrivyToken = (index: number): void => {
     setPrivyTokens(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleStartEditPrivyToken = (index: number): void => {
+    setEditingIndex(index);
+    setEditGameLabel(privyTokens[index]?.gameLabel || '');
+    setEditPrivyToken('');
+  };
+
+  const handleCancelEditPrivyToken = (): void => {
+    setEditingIndex(null);
+    setEditGameLabel('');
+    setEditPrivyToken('');
+  };
+
+  const handleSavePrivyToken = (): void => {
+    if (editingIndex === null) return;
+    const index = editingIndex;
+    setPrivyTokens(prev => prev.map((pt, i) => {
+      if (i !== index) return pt;
+      return {
+        gameLabel: editGameLabel.trim() || pt.gameLabel,
+        privyToken: editPrivyToken.trim() ? editPrivyToken.trim() : pt.privyToken,
+      };
+    }));
+    handleCancelEditPrivyToken();
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
@@ -186,19 +214,73 @@ const AccountForm: React.FC<AccountFormProps> = ({ mode, initialValues, isSubmit
           {privyTokens.length > 0 && (
             <div className="space-y-2">
               <div className="text-xs font-medium text-gray-600">Current Privy Tokens:</div>
-              {privyTokens.map((token, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded-md">
-                  <div className="flex-1">
-                    <span className="text-sm font-medium text-gray-900">{token.gameLabel}</span>
-                    <span className="ml-2 text-xs text-gray-500">••••••••</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePrivyToken(index)}
-                    className="ml-2 rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-                  >
-                    Remove
-                  </button>
+              {privyTokens.map((pt, index) => (
+                <div key={index} className="p-3 bg-white border border-gray-200 rounded-md">
+                  {editingIndex === index ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600">Game Label</label>
+                        <input
+                          type="text"
+                          value={editGameLabel}
+                          onChange={(e) => setEditGameLabel(e.target.value)}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                          placeholder="Update game label"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600">Privy Token</label>
+                        <input
+                          type="password"
+                          value={editPrivyToken}
+                          onChange={(e) => setEditPrivyToken(e.target.value)}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                          placeholder="Leave blank to keep current token"
+                        />
+                        <p className="mt-1 text-[10px] text-gray-500">If left blank, the existing token will be kept.</p>
+                      </div>
+                      <div className="sm:col-span-2 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSavePrivyToken}
+                          disabled={!editGameLabel.trim()}
+                          className="rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelEditPrivyToken}
+                          className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-gray-900">{pt.gameLabel}</span>
+                        <span className="ml-2 text-xs text-gray-500">••••••••</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditPrivyToken(index)}
+                          className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePrivyToken(index)}
+                          className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
