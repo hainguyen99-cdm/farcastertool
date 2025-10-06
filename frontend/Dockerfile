@@ -18,14 +18,14 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     PORT=3000
-# Install only production dependencies for runtime
-COPY package*.json ./
-ENV NPM_CONFIG_LEGACY_PEER_DEPS=true
-RUN npm ci --omit=dev --legacy-peer-deps
+# Use already-resolved dependencies from deps stage to avoid network during runtime image
+COPY --from=deps /app/node_modules ./node_modules
 # Copy required runtime assets
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/next.config.mjs ./next.config.mjs
+# Copy package.json for start script (no npm install here)
+COPY package*.json ./
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 EXPOSE 3000
