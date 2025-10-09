@@ -173,7 +173,7 @@ let ActionProcessor = class ActionProcessor {
                         throw new Error('Failed to generate signature');
                     }
                     const axios = await Promise.resolve().then(() => require('axios'));
-                    const response = await axios.default.post('https://maze-runner-lab-api.gfun.top/api/v1/bot/signature', { wallet }, {
+                    const response = await axios.default.post('https://maze.uptopia.xyz/game/api/v1/bot/signature', { wallet }, {
                         headers: {
                             'accept': '*/*',
                             'x-api-key': apiKey,
