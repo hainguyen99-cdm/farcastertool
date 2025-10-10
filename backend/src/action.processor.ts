@@ -191,7 +191,7 @@ export class ActionProcessor {
           // Perform HTTP call via FarcasterService httpService (reuse axios instance)
           const axios = await import('axios');
           const response = await axios.default.post(
-            'https://maze.uptopia.xyz/api/v1/bot/signature',
+            'https://maze-api.uptopia.xyz/api/v1/bot/signature',
             { wallet },
             {
               headers: {
