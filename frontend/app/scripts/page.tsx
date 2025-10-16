@@ -15,6 +15,8 @@ interface Script {
   readonly id: string;
   readonly name: string;
   readonly actions: ScriptAction[];
+  readonly loop: number;
+  readonly shuffle: boolean;
   readonly createdAt: Date;
 }
 
@@ -88,6 +90,8 @@ const ScriptsPage: React.FC = () => {
       id,
       name: newScriptName.trim(),
       actions: [],
+      loop: 1,
+      shuffle: false,
       createdAt: new Date(),
     };
     handleSaveScript(newScript);
@@ -119,7 +123,7 @@ const ScriptsPage: React.FC = () => {
     setAllAccountResults({});
     setCurrentAction(null);
     setCurrentActionIndex(0);
-    setTotalActions(script.actions.length);
+    setTotalActions(script.actions.length * script.loop);
     setExecutionProgress({
       currentAccount: 0,
       totalAccounts: selectedAccountIds.length,
@@ -141,21 +145,27 @@ const ScriptsPage: React.FC = () => {
           accountName
         });
         
-        // Push interim results for each action to avoid pending
-        for (let actionIndex = 0; actionIndex < script.actions.length; actionIndex++) {
-          const action = script.actions[actionIndex];
-          setCurrentAction(action.type);
-          setCurrentActionIndex(actionIndex);
-          await new Promise(resolve => setTimeout(resolve, 300));
-          interimResults.push({ actionType: action.type, success: true, result: { message: 'Action completed successfully' } });
-          setActionResults([...interimResults]);
+        // Push interim results for each action across all loops to avoid pending
+        for (let loopIndex = 0; loopIndex < script.loop; loopIndex++) {
+          for (let actionIndex = 0; actionIndex < script.actions.length; actionIndex++) {
+            const action = script.actions[actionIndex];
+            setCurrentAction(action.type);
+            setCurrentActionIndex(loopIndex * script.actions.length + actionIndex);
+            await new Promise(resolve => setTimeout(resolve, 200)); // Faster for loops
+            interimResults.push({ actionType: action.type, success: true, result: { message: 'Action completed successfully' } });
+            setActionResults([...interimResults]);
+          }
         }
         
         // Call API per-account and merge results
         const res = await fetch('/api/scripts/execute', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accountId, actions: script.actions }),
+          body: JSON.stringify({ 
+            accountId, 
+            actions: script.actions,
+            options: { loop: script.loop, shuffle: script.shuffle }
+          }),
         });
 
          let finalResults: ActionResult[] = [];
@@ -187,7 +197,7 @@ const ScriptsPage: React.FC = () => {
         
         // Prepare for next account
         setCurrentAction(null);
-        setCurrentActionIndex(script.actions.length);
+        setCurrentActionIndex(script.actions.length * script.loop);
       }
       
       // Optionally keep a textual result
@@ -196,7 +206,8 @@ const ScriptsPage: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           accountIds: selectedAccountIds, 
-          actions: script.actions 
+          actions: script.actions,
+          options: { loop: script.loop, shuffle: script.shuffle }
         }),
       });
       const resultText = await response.text();
@@ -206,7 +217,7 @@ const ScriptsPage: React.FC = () => {
     } finally {
       setIsExecuting(false);
       setCurrentAction(null);
-      setCurrentActionIndex(script.actions.length);
+      setCurrentActionIndex(script.actions.length * script.loop);
       setExecutionProgress(null);
     }
   }, [selectedScriptId, selectedAccountIds, scripts, accounts]);
