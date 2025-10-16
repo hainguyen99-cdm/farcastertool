@@ -16,6 +16,8 @@ export interface Script {
   readonly id: string;
   readonly name: string;
   readonly actions: ScriptAction[];
+  readonly loop: number;
+  readonly shuffle: boolean;
   readonly createdAt: Date;
 }
 
@@ -29,11 +31,15 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
   const [newType, setNewType] = useState<ActionType>('GetFeed');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [loop, setLoop] = useState<number>(script.loop || 1);
+  const [shuffle, setShuffle] = useState<boolean>(script.shuffle || false);
 
   // Sync internal actions state when script prop changes
   useEffect(() => {
     setActions(script.actions);
-  }, [script.actions]);
+    setLoop(script.loop || 1);
+    setShuffle(script.shuffle || false);
+  }, [script.actions, script.loop, script.shuffle]);
 
   const availableTypes: ActionType[] = ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel', 'FollowUser', 'UpdateWallet', 'CreateRecordGame', 'MiniAppEvent', 'AnalyticsEvents'];
 
@@ -59,6 +65,8 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
       const updatedScript: Script = {
         ...script,
         actions: actions.map((a, i) => ({ ...a, order: i })),
+        loop,
+        shuffle,
       };
       onSave(updatedScript);
       setSaveMessage('Script saved successfully!');
@@ -66,7 +74,7 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
     } finally {
       setIsSaving(false);
     }
-  }, [script, actions, onSave]);
+  }, [script, actions, loop, shuffle, onSave]);
 
   return (
     <div className="space-y-4">
@@ -95,6 +103,34 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
         >
           Add
         </button>
+      </div>
+
+      {/* Loop and Shuffle Configuration */}
+      <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="script-loop" className="text-sm text-gray-700">Loop Count</label>
+          <input
+            id="script-loop"
+            type="number"
+            min={1}
+            className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+            value={loop}
+            onChange={(e) => setLoop(Math.max(1, Number.parseInt(e.target.value || '1', 10)))}
+          />
+          <p className="text-xs text-gray-500">Number of times to execute the script</p>
+        </div>
+        <div className="flex flex-col justify-end">
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+              checked={shuffle}
+              onChange={(e) => setShuffle(e.target.checked)}
+            />
+            Shuffle Actions
+          </label>
+          <p className="text-xs text-gray-500">Randomize action order on each loop</p>
+        </div>
       </div>
 
       {/* Actions List */}

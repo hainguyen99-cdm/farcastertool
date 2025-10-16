@@ -153,7 +153,7 @@ const AccountsPage: React.FC = () => {
     }
   };
 
-  const handleExecuteScript = async (accountId: string, actions: ScriptAction[]): Promise<void> => {
+  const handleExecuteScript = async (accountId: string, actions: ScriptAction[], options?: { loop?: number; shuffle?: boolean }): Promise<void> => {
     setIsExecutingScript(true);
     setScriptResult(null);
     setShowActionStatus(true);
@@ -161,26 +161,32 @@ const AccountsPage: React.FC = () => {
     setActionResults([]);
     setCurrentAction(null);
     setCurrentActionIndex(0);
-    setTotalActions(actions.length);
+    
+    const loopCount = options?.loop || 1;
+    const totalActions = actions.length * loopCount;
+    setTotalActions(totalActions);
 
     try {
       const interimResults: ActionResult[] = [];
 
-      for (let i = 0; i < actions.length; i++) {
-        const action = actions[i];
-        setCurrentAction(action.type);
-        setCurrentActionIndex(i);
-        await new Promise(resolve => setTimeout(resolve, 400));
-        // Push an optimistic success for visual continuity
-        interimResults.push({ actionType: action.type, success: true, result: { message: 'Action completed successfully' } });
-        setActionResults([...interimResults]);
+      // Simulate progress for all actions across all loops
+      for (let loopIndex = 0; loopIndex < loopCount; loopIndex++) {
+        for (let i = 0; i < actions.length; i++) {
+          const action = actions[i];
+          setCurrentAction(action.type);
+          setCurrentActionIndex(loopIndex * actions.length + i);
+          await new Promise(resolve => setTimeout(resolve, 200)); // Faster simulation for loops
+          // Push an optimistic success for visual continuity
+          interimResults.push({ actionType: action.type, success: true, result: { message: 'Action completed successfully' } });
+          setActionResults([...interimResults]);
+        }
       }
 
-      // Call API once with all actions
+      // Call API once with all actions and options
       const response = await fetch('/api/scripts/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accountId, actions }),
+        body: JSON.stringify({ accountId, actions, options }),
       });
 
       if (response.ok) {

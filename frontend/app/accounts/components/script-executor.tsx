@@ -15,7 +15,7 @@ export interface ScriptAction {
 export interface ScriptExecutorProps {
   readonly accountId: string;
   readonly accountName: string;
-  readonly onExecute: (accountId: string, actions: ScriptAction[]) => Promise<void>;
+  readonly onExecute: (accountId: string, actions: ScriptAction[], options?: { loop?: number; shuffle?: boolean }) => Promise<void>;
   readonly isExecuting?: boolean;
 }
 
@@ -29,6 +29,8 @@ const ScriptExecutor: React.FC<ScriptExecutorProps> = ({
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [newType, setNewType] = useState<ActionType>('GetFeed');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [loop, setLoop] = useState<number>(1);
+  const [shuffle, setShuffle] = useState<boolean>(false);
 
   const availableTypes: ActionType[] = ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel', 'UpdateWallet', 'CreateRecordGame'];
 
@@ -51,13 +53,13 @@ const ScriptExecutor: React.FC<ScriptExecutorProps> = ({
     if (actions.length === 0) return;
     setIsSubmitting(true);
     try {
-      await onExecute(accountId, actions);
+      await onExecute(accountId, actions, { loop, shuffle });
       setActions([]);
       setIsOpen(false);
     } finally {
       setIsSubmitting(false);
     }
-  }, [accountId, actions, onExecute]);
+  }, [accountId, actions, loop, shuffle, onExecute]);
 
   const handleOpen = useCallback((): void => {
     setIsOpen(true);
@@ -121,6 +123,34 @@ const ScriptExecutor: React.FC<ScriptExecutorProps> = ({
                 >
                   Add
                 </button>
+              </div>
+            </div>
+
+            {/* Loop and Shuffle Configuration */}
+            <div className="mb-4 grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1">
+                <label htmlFor="script-loop" className="text-sm text-gray-700">Loop Count</label>
+                <input
+                  id="script-loop"
+                  type="number"
+                  min={1}
+                  className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                  value={loop}
+                  onChange={(e) => setLoop(Math.max(1, Number.parseInt(e.target.value || '1', 10)))}
+                />
+                <p className="text-xs text-gray-500">Number of times to execute the script</p>
+              </div>
+              <div className="flex flex-col justify-end">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                    checked={shuffle}
+                    onChange={(e) => setShuffle(e.target.checked)}
+                  />
+                  Shuffle Actions
+                </label>
+                <p className="text-xs text-gray-500">Randomize action order on each loop</p>
               </div>
             </div>
 

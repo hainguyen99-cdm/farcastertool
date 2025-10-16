@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { ScriptExecutionService, ScriptAction } from './script-execution.service';
+import { ScriptExecutionService, ScriptAction, ScriptExecutionOptions } from './script-execution.service';
 
 @Controller('scripts')
 export class ScriptController {
@@ -9,12 +9,14 @@ export class ScriptController {
   async executeScript(
     @Body() body: { 
       accountId: string; 
-      actions: ScriptAction[] 
+      actions: ScriptAction[];
+      options?: ScriptExecutionOptions;
     }
   ) {
     return await this.scriptExecutionService.executeScript(
       body.accountId, 
-      body.actions
+      body.actions,
+      body.options
     );
   }
 
@@ -22,12 +24,14 @@ export class ScriptController {
   async executeScriptOnMultipleAccounts(
     @Body() body: { 
       accountIds: string[]; 
-      actions: ScriptAction[] 
+      actions: ScriptAction[];
+      options?: ScriptExecutionOptions;
     }
   ) {
     return await this.scriptExecutionService.executeScriptOnMultipleAccounts(
       body.accountIds, 
-      body.actions
+      body.actions,
+      body.options
     );
   }
 }
