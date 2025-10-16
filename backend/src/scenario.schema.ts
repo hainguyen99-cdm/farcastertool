@@ -12,6 +12,7 @@ export enum ActionType {
   JOIN_CHANNEL = 'JoinChannel',
   FOLLOW_USER = 'FollowUser',
   UPDATE_WALLET = 'UpdateWallet',
+  CREATE_WALLET = 'CreateWallet',
   CREATE_RECORD_GAME = 'CreateRecordGame',
   MINI_APP_EVENT = 'MiniAppEvent',
   ANALYTICS_EVENTS = 'AnalyticsEvents',

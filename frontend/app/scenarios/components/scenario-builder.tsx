@@ -2,8 +2,9 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import { DragDropContext, Draggable, Droppable, DropResult } from '@hello-pangea/dnd';
+import GameLabelSelector from '../../accounts/components/game-label-selector';
 
-export type ActionType = 'GetFeed' | 'LikeCast' | 'RecastCast' | 'PinMiniApp' | 'Delay' | 'JoinChannel' | string;
+export type ActionType = 'GetFeed' | 'LikeCast' | 'RecastCast' | 'PinMiniApp' | 'Delay' | 'JoinChannel' | 'CreateRecordGame' | string;
 
 export interface BuilderAction {
   readonly id: string;
@@ -27,7 +28,7 @@ const reorder = (list: BuilderAction[], startIndex: number, endIndex: number): B
 
 const ScenarioBuilder: React.FC<ScenarioBuilderProps> = ({ actions, onChange, onRemove }) => {
   const [newType, setNewType] = useState<ActionType>('GetFeed');
-  const availableTypes = useMemo<ActionType[]>(() => ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel'], []);
+  const availableTypes = useMemo<ActionType[]>(() => ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel', 'CreateRecordGame'], []);
 
   const handleDragEnd = useCallback((result: DropResult): void => {
     if (!result.destination) return;
@@ -228,6 +229,22 @@ const ScenarioBuilder: React.FC<ScenarioBuilderProps> = ({ actions, onChange, on
                               }}
                             />
                             <p className="text-xs text-gray-500">Enter the miniapp domain to pin (favorite).</p>
+                          </div>
+                        </div>
+                      ) : null}
+                      {action.type === 'CreateRecordGame' ? (
+                        <div className="max-w-md">
+                          <div className="flex flex-col gap-1">
+                            <label htmlFor={`gameLabel-${action.id}`} className="text-sm text-gray-700">Game Label</label>
+                            <GameLabelSelector
+                              inputId={`gameLabel-${action.id}`}
+                              value={typeof action.config?.gameLabel === 'string' ? action.config.gameLabel as string : ''}
+                              onChange={(val) => {
+                                const updated = actions.map((a) => a.id === action.id ? { ...a, config: { ...a.config, gameLabel: val } } : a);
+                                onChange(updated);
+                              }}
+                            />
+                            <p className="text-xs text-gray-500">Must match a privy token's game label on the account.</p>
                           </div>
                         </div>
                       ) : null}

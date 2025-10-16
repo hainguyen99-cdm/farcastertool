@@ -136,6 +136,18 @@ let AccountService = class AccountService {
             throw error;
         }
     }
+    async updateWalletAddress(id, walletAddress) {
+        const updatedAccount = await this.accountModel
+            .findByIdAndUpdate(id, {
+            walletAddress,
+            lastUsed: new Date(),
+        }, { new: true })
+            .exec();
+        if (!updatedAccount) {
+            throw new common_1.NotFoundException(`Account with ID ${id} not found`);
+        }
+        return updatedAccount;
+    }
     async addPrivyToken(id, addPrivyTokenDto) {
         const account = await this.findOne(id);
         const encryptedPrivyToken = this.encryptionService.encrypt(addPrivyTokenDto.privyToken);

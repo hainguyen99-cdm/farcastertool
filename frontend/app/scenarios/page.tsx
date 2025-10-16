@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ScenarioBuilder, { BuilderAction } from './components/scenario-builder';
 
-type ActionType = 'GetFeed' | 'LikeCast' | 'Delay' | 'JoinChannel' | string;
+type ActionType = 'GetFeed' | 'LikeCast' | 'Delay' | 'JoinChannel' | 'CreateRecordGame' | string;
 
 interface ScenarioAction {
   readonly type: ActionType;

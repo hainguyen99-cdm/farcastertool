@@ -29,6 +29,7 @@
     "@nestjs/platform-express": "^11.1.6",
     "axios": "^1.7.9",
     "bull": "^4.16.5",
+    "ethers": "^6.15.0",
     "mongoose": "^8.18.1",
     "multer": "^2.0.2",
     "redis": "^5.8.2",

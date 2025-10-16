@@ -9,6 +9,7 @@ import { LogStatus } from './log.schema';
 import { AccountService } from './account.service';
 import { SignatureHeaderService } from './signature-header.service';
 import { GameRecordService } from './game-record.service';
+import { ethers } from 'ethers';
 
 interface ActionJobDataAction {
   type: ActionType;
@@ -159,6 +160,29 @@ export class ActionProcessor {
             walletAddress: updatedAccount.walletAddress,
             username: updatedAccount.username,
             fid: updatedAccount.fid,
+          };
+          break;
+        }
+        case ActionType.CREATE_WALLET:
+        case 'CreateWallet': {
+          const secretPhrase = action.config['secretPhrase'] as string;
+          if (!secretPhrase) {
+            throw new Error('Missing secretPhrase for CREATE_WALLET action');
+          }
+          
+          // Create wallet from mnemonic phrase
+          const wallet = ethers.Wallet.fromPhrase(secretPhrase);
+          const walletAddress = wallet.address;
+          const privateKey = wallet.privateKey;
+          
+          // Update the account with the new wallet information using account service
+          const updatedAccount = await this.accountService.updateWalletAddress(accountId, walletAddress);
+          
+          result = {
+            success: true,
+            walletAddress,
+            privateKey,
+            message: 'Wallet created and saved successfully',
           };
           break;
         }

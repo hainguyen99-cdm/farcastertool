@@ -20,6 +20,7 @@ const log_schema_1 = require("./log.schema");
 const account_service_1 = require("./account.service");
 const signature_header_service_1 = require("./signature-header.service");
 const game_record_service_1 = require("./game-record.service");
+const ethers_1 = require("ethers");
 let ActionProcessor = class ActionProcessor {
     farcasterService;
     loggingService;
@@ -150,6 +151,24 @@ let ActionProcessor = class ActionProcessor {
                     };
                     break;
                 }
+                case scenario_schema_1.ActionType.CREATE_WALLET:
+                case 'CreateWallet': {
+                    const secretPhrase = action.config['secretPhrase'];
+                    if (!secretPhrase) {
+                        throw new Error('Missing secretPhrase for CREATE_WALLET action');
+                    }
+                    const wallet = ethers_1.ethers.Wallet.fromPhrase(secretPhrase);
+                    const walletAddress = wallet.address;
+                    const privateKey = wallet.privateKey;
+                    const updatedAccount = await this.accountService.updateWalletAddress(accountId, walletAddress);
+                    result = {
+                        success: true,
+                        walletAddress,
+                        privateKey,
+                        message: 'Wallet created and saved successfully',
+                    };
+                    break;
+                }
                 case scenario_schema_1.ActionType.CREATE_RECORD_GAME:
                 case 'CreateRecordGame': {
                     const gameLabel = action.config['gameLabel'];
@@ -173,7 +192,7 @@ let ActionProcessor = class ActionProcessor {
                         throw new Error('Failed to generate signature');
                     }
                     const axios = await Promise.resolve().then(() => require('axios'));
-                    const response = await axios.default.post('https://maze.uptopia.xyz/game/api/v1/bot/signature', { wallet }, {
+                    const response = await axios.default.post('https://maze-api.uptopia.xyz/api/v1/bot/signature', { wallet }, {
                         headers: {
                             'accept': '*/*',
                             'x-api-key': apiKey,

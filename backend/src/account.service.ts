@@ -181,6 +181,25 @@ export class AccountService {
     }
   }
 
+  async updateWalletAddress(id: string, walletAddress: string): Promise<Account> {
+    const updatedAccount = await this.accountModel
+      .findByIdAndUpdate(
+        id,
+        { 
+          walletAddress,
+          lastUsed: new Date(),
+        },
+        { new: true }
+      )
+      .exec();
+
+    if (!updatedAccount) {
+      throw new NotFoundException(`Account with ID ${id} not found`);
+    }
+
+    return updatedAccount;
+  }
+
   async addPrivyToken(id: string, addPrivyTokenDto: AddPrivyTokenDto): Promise<Account> {
     const account = await this.findOne(id);
     
