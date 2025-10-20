@@ -26,62 +26,72 @@ let ScriptExecutionService = class ScriptExecutionService {
         this.actionsQueue = actionsQueue;
         this.accountModel = accountModel;
     }
-    async executeScript(accountId, actions) {
+    async executeScript(accountId, actions, options = {}) {
         const account = await this.accountModel.findById(new mongoose_2.Types.ObjectId(accountId)).exec();
         if (!account) {
             throw new Error('Account not found');
         }
+        const { loop = 1, shuffle = false } = options;
         const results = [];
         const sortedActions = [...actions].sort((a, b) => a.order - b.order);
-        for (const action of sortedActions) {
-            try {
-                const job = await this.actionsQueue.add({
-                    accountId: account._id.toString(),
-                    scenarioId: new mongoose_2.Types.ObjectId().toString(),
-                    action: {
-                        type: action.type,
-                        config: action.config,
-                    },
-                    encryptedToken: account.encryptedToken,
-                    previousResults: {},
-                }, {
-                    attempts: 3,
-                    backoff: { type: 'exponential', delay: 1000 },
-                    removeOnComplete: true,
-                    removeOnFail: true,
-                });
-                const result = (await job.finished());
-                results.push({
-                    actionType: action.type,
-                    success: true,
-                    result,
-                });
-            }
-            catch (error) {
-                results.push({
-                    actionType: action.type,
-                    success: false,
-                    error: error.message,
-                });
+        for (let loopIndex = 0; loopIndex < loop; loopIndex++) {
+            const actionsToExecute = shuffle
+                ? [...sortedActions].sort(() => Math.random() - 0.5)
+                : sortedActions;
+            for (const action of actionsToExecute) {
+                try {
+                    const job = await this.actionsQueue.add({
+                        accountId: account._id.toString(),
+                        scenarioId: new mongoose_2.Types.ObjectId().toString(),
+                        action: {
+                            type: action.type,
+                            config: action.config,
+                        },
+                        encryptedToken: account.encryptedToken,
+                        previousResults: {},
+                    }, {
+                        attempts: 3,
+                        backoff: { type: 'exponential', delay: 1000 },
+                        removeOnComplete: true,
+                        removeOnFail: true,
+                    });
+                    const result = (await job.finished());
+                    results.push({
+                        actionType: action.type,
+                        success: true,
+                        result,
+                        loopIndex,
+                    });
+                }
+                catch (error) {
+                    results.push({
+                        actionType: action.type,
+                        success: false,
+                        error: error.message,
+                        loopIndex,
+                    });
+                }
             }
         }
         return {
             accountId: account._id.toString(),
             actionsExecuted: results.length,
+            loopsExecuted: loop,
             results,
         };
     }
-    async executeScriptOnMultipleAccounts(accountIds, actions) {
+    async executeScriptOnMultipleAccounts(accountIds, actions, options = {}) {
         const results = [];
         for (const accountId of accountIds) {
             try {
-                const result = await this.executeScript(accountId, actions);
+                const result = await this.executeScript(accountId, actions, options);
                 results.push(result);
             }
             catch (error) {
                 results.push({
                     accountId,
                     actionsExecuted: 0,
+                    loopsExecuted: 0,
                     results: [{
                             actionType: actions[0]?.type || scenario_schema_1.ActionType.GET_FEED,
                             success: false,

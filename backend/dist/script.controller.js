@@ -21,10 +21,10 @@ let ScriptController = class ScriptController {
         this.scriptExecutionService = scriptExecutionService;
     }
     async executeScript(body) {
-        return await this.scriptExecutionService.executeScript(body.accountId, body.actions);
+        return await this.scriptExecutionService.executeScript(body.accountId, body.actions, body.options);
     }
     async executeScriptOnMultipleAccounts(body) {
-        return await this.scriptExecutionService.executeScriptOnMultipleAccounts(body.accountIds, body.actions);
+        return await this.scriptExecutionService.executeScriptOnMultipleAccounts(body.accountIds, body.actions, body.options);
     }
 };
 exports.ScriptController = ScriptController;
