@@ -31,14 +31,23 @@ export const getApiBaseUrl = (): string => {
 export const forwardJson = async (path: string, init: RequestInit): Promise<Response> => {
   const candidates = resolveBackendCandidates();
   let lastError: unknown = null;
+  
+  console.log('Trying backend candidates:', candidates);
+  
   for (const base of candidates) {
     try {
-      return await fetch(`${base}${path}`, init);
+      console.log(`Attempting to connect to: ${base}${path}`);
+      const response = await fetch(`${base}${path}`, init);
+      console.log(`Successfully connected to: ${base}${path}, status: ${response.status}`);
+      return response;
     } catch (err) {
+      console.error(`Failed to connect to ${base}${path}:`, err);
       lastError = err;
       continue;
     }
   }
+  
+  console.error('All backend connection attempts failed');
   throw lastError instanceof Error ? lastError : new Error('Failed to reach backend');
 };
 

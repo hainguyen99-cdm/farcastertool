@@ -14,7 +14,7 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
-    PORT=3003
+    PORT=3002
 # Install only production dependencies
 COPY package*.json ./
 RUN npm ci --omit=dev

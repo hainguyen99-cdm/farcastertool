@@ -72,6 +72,19 @@ export async function POST(req: NextRequest): Promise<Response> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accounts }),
     });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Backend import failed:', response.status, errorText);
+      return new Response(JSON.stringify({ 
+        error: 'Backend import failed', 
+        message: `Backend returned ${response.status}: ${errorText}` 
+      }), { 
+        status: response.status, 
+        headers: { 'Content-Type': 'application/json' } 
+      });
+    }
+    
     const dataText = await response.text();
     const contentType = response.headers.get('Content-Type') || 'application/json';
     return new Response(dataText, { status: response.status, headers: { 'Content-Type': contentType } });
