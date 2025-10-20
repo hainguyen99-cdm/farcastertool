@@ -61,7 +61,7 @@ const ImportAccountsModal: React.FC<ImportAccountsModalProps> = ({ onClose, onIm
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch('/api/accounts/import', { method: 'POST', body: formData });
+      const response = await fetch('/front-api/accounts/import', { method: 'POST', body: formData });
       if (!response.ok) throw new Error('Import failed');
       const data = await response.json();
       onImported({ success: data.success ?? 0, totalProcessed: data.totalProcessed ?? 0 });
