@@ -294,34 +294,18 @@ export class ActionProcessor {
             console.log(`Successfully saved ${savedRecords.length} game records`);
           } catch (dbError) {
             console.error('Bulk save failed, trying individual saves:', dbError);
-            // Fallback: try to save each record individually with duplicate handling
+            // Fallback: try to save each record individually
             let successCount = 0;
-            let skipCount = 0;
             for (const input of gameRecordInputs) {
               try {
-                // Check if record already exists before attempting to save (recordId only)
-                const exists = await this.gameRecordService.recordExists(input.accountId, input.gameLabel, input.apiResponse);
-                if (exists) {
-                  const pieces = this.gameRecordService['extractFields'](input.apiResponse);
-                  console.log(`Skipping existing recordId: ${pieces.recordId || 'no-recordId'}`);
-                  skipCount++;
-                  continue;
-                }
-                
                 await this.gameRecordService.createUnused(input);
                 successCount++;
                 console.log(`Individual record saved successfully (${successCount}/${gameRecordInputs.length})`);
               } catch (individualError) {
-                if (individualError.message?.includes('duplicate key')) {
-                  console.log('Skipping duplicate record:', individualError.message);
-                  skipCount++;
-                  // This is expected for duplicates, continue
-                } else {
-                  console.error('Failed to save individual record:', individualError);
-                }
+                console.error('Failed to save individual record:', individualError);
               }
             }
-            console.log(`Individual save completed: ${successCount} records saved, ${skipCount} skipped (duplicates)`);
+            console.log(`Individual save completed: ${successCount} records saved`);
           }
           
           result = records;

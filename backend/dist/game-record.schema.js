@@ -79,5 +79,4 @@ exports.GameRecord = GameRecord = __decorate([
     (0, mongoose_1.Schema)()
 ], GameRecord);
 exports.GameRecordSchema = mongoose_1.SchemaFactory.createForClass(GameRecord);
-exports.GameRecordSchema.index({ accountId: 1, recordId: 1 }, { unique: true, sparse: true });
 //# sourceMappingURL=game-record.schema.js.map

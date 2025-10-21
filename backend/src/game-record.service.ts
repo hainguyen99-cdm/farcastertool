@@ -42,11 +42,9 @@ export class GameRecordService {
     }
 
     try {
-      // Process inputs directly; API guarantees 100 unique records per call
-      const processedInputs = inputs;
-      console.log(`Processing ${processedInputs.length} records from API response`);
+      console.log(`Processing ${inputs.length} records from API response`);
 
-      const operations = processedInputs.map(input => {
+      const operations = inputs.map(input => {
         const pieces = this.extractFields(input.apiResponse);
         const filter: Record<string, unknown> = {
           accountId: new Types.ObjectId(input.accountId),
@@ -70,16 +68,15 @@ export class GameRecordService {
 
       await this.model.bulkWrite(operations);
       
-      // Return the created records by finding them again
       // Return saved/updated documents by refetching with accountId + gameLabel
-      const accountId = processedInputs[0]?.accountId;
-      const gameLabel = processedInputs[0]?.gameLabel;
+      const accountId = inputs[0]?.accountId;
+      const gameLabel = inputs[0]?.gameLabel;
       if (accountId && gameLabel) {
         return this.model.find({ 
           accountId: new Types.ObjectId(accountId), 
           gameLabel,
           status: GameRecordStatus.UNUSED 
-        }).sort({ createdAt: -1 }).limit(processedInputs.length).exec();
+        }).sort({ createdAt: -1 }).limit(inputs.length).exec();
       }
       
       return [];
@@ -89,31 +86,7 @@ export class GameRecordService {
     }
   }
 
-  // API is trusted to return unique records per call; no pre-save deduplication needed
-
-  /**
-   * Check if a record already exists in the database based on recordId only
-   * @param accountId - Account ID
-   * @param gameLabel - Game label
-   * @param apiResponse - API response to extract unique identifiers from
-   * @returns Promise<boolean> - True if record exists
-   */
-  async recordExists(accountId: string, gameLabel: string, apiResponse: Record<string, unknown>): Promise<boolean> {
-    const pieces = this.extractFields(apiResponse);
-    
-    // Only check for recordId, ignore nonce-based duplicates
-    if (!pieces.recordId) {
-      return false; // No recordId to check, consider it new
-    }
-    
-    const filter: Record<string, unknown> = {
-      accountId: new Types.ObjectId(accountId),
-      recordId: pieces.recordId,
-    };
-    
-    const existing = await this.model.findOne(filter).exec();
-    return !!existing;
-  }
+  // No duplicate checking - all records are saved
 
   /**
    * Find all unused game records by wallet address and return only the data portion

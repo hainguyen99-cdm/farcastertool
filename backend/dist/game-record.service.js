@@ -44,9 +44,8 @@ let GameRecordService = class GameRecordService {
             return [];
         }
         try {
-            const processedInputs = inputs;
-            console.log(`Processing ${processedInputs.length} records from API response`);
-            const operations = processedInputs.map(input => {
+            console.log(`Processing ${inputs.length} records from API response`);
+            const operations = inputs.map(input => {
                 const pieces = this.extractFields(input.apiResponse);
                 const filter = {
                     accountId: new mongoose_2.Types.ObjectId(input.accountId),
@@ -68,14 +67,14 @@ let GameRecordService = class GameRecordService {
                 };
             });
             await this.model.bulkWrite(operations);
-            const accountId = processedInputs[0]?.accountId;
-            const gameLabel = processedInputs[0]?.gameLabel;
+            const accountId = inputs[0]?.accountId;
+            const gameLabel = inputs[0]?.gameLabel;
             if (accountId && gameLabel) {
                 return this.model.find({
                     accountId: new mongoose_2.Types.ObjectId(accountId),
                     gameLabel,
                     status: game_record_schema_1.GameRecordStatus.UNUSED
-                }).sort({ createdAt: -1 }).limit(processedInputs.length).exec();
+                }).sort({ createdAt: -1 }).limit(inputs.length).exec();
             }
             return [];
         }
@@ -83,18 +82,6 @@ let GameRecordService = class GameRecordService {
             console.error('Error in createUnusedBulk:', error);
             throw error;
         }
-    }
-    async recordExists(accountId, gameLabel, apiResponse) {
-        const pieces = this.extractFields(apiResponse);
-        if (!pieces.recordId) {
-            return false;
-        }
-        const filter = {
-            accountId: new mongoose_2.Types.ObjectId(accountId),
-            recordId: pieces.recordId,
-        };
-        const existing = await this.model.findOne(filter).exec();
-        return !!existing;
     }
     async findByWalletAddress(walletAddress) {
         const records = await this.model.find({

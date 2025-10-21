@@ -251,31 +251,17 @@ let ActionProcessor = class ActionProcessor {
                     catch (dbError) {
                         console.error('Bulk save failed, trying individual saves:', dbError);
                         let successCount = 0;
-                        let skipCount = 0;
                         for (const input of gameRecordInputs) {
                             try {
-                                const exists = await this.gameRecordService.recordExists(input.accountId, input.gameLabel, input.apiResponse);
-                                if (exists) {
-                                    const pieces = this.gameRecordService['extractFields'](input.apiResponse);
-                                    console.log(`Skipping existing recordId: ${pieces.recordId || 'no-recordId'}`);
-                                    skipCount++;
-                                    continue;
-                                }
                                 await this.gameRecordService.createUnused(input);
                                 successCount++;
                                 console.log(`Individual record saved successfully (${successCount}/${gameRecordInputs.length})`);
                             }
                             catch (individualError) {
-                                if (individualError.message?.includes('duplicate key')) {
-                                    console.log('Skipping duplicate record:', individualError.message);
-                                    skipCount++;
-                                }
-                                else {
-                                    console.error('Failed to save individual record:', individualError);
-                                }
+                                console.error('Failed to save individual record:', individualError);
                             }
                         }
-                        console.log(`Individual save completed: ${successCount} records saved, ${skipCount} skipped (duplicates)`);
+                        console.log(`Individual save completed: ${successCount} records saved`);
                     }
                     result = records;
                     return { ...(previousResults || {}), [action.type]: records };
