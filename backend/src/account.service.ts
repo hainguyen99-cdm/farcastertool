@@ -259,5 +259,42 @@ export class AccountService {
     
     return this.encryptionService.decrypt(privyToken.encryptedPrivyToken);
   }
+
+  /**
+   * Check if an account is ready for CREATE_RECORD_GAME action
+   * @param id - Account ID
+   * @param gameLabel - Game label to check
+   * @returns Promise<{ ready: boolean; issues: string[] }>
+   */
+  async checkCreateRecordGameReadiness(id: string, gameLabel: string): Promise<{ ready: boolean; issues: string[] }> {
+    const issues: string[] = [];
+    
+    try {
+      const account = await this.findOne(id);
+      
+      if (!account.walletAddress) {
+        issues.push('Account has no wallet address');
+      }
+      
+      if (!account.privyTokens || account.privyTokens.length === 0) {
+        issues.push('Account has no privy tokens');
+      } else {
+        const hasGameToken = account.privyTokens.some(pt => pt.gameLabel === gameLabel);
+        if (!hasGameToken) {
+          issues.push(`No privy token found for game label "${gameLabel}"`);
+        }
+      }
+      
+      return {
+        ready: issues.length === 0,
+        issues
+      };
+    } catch (error) {
+      return {
+        ready: false,
+        issues: [`Account not found: ${error.message}`]
+      };
+    }
+  }
 }
 

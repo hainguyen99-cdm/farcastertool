@@ -32,6 +32,90 @@ export class GameRecordService {
   }
 
   /**
+   * Create multiple unused game records in bulk
+   * @param inputs - Array of CreateGameRecordInput
+   * @returns Promise<GameRecord[]> - Array of created/updated game records
+   */
+  async createUnusedBulk(inputs: CreateGameRecordInput[]): Promise<GameRecord[]> {
+    if (inputs.length === 0) {
+      return [];
+    }
+
+    try {
+      // Process inputs directly; API guarantees 100 unique records per call
+      const processedInputs = inputs;
+      console.log(`Processing ${processedInputs.length} records from API response`);
+
+      const operations = processedInputs.map(input => {
+        const pieces = this.extractFields(input.apiResponse);
+        const filter: Record<string, unknown> = {
+          accountId: new Types.ObjectId(input.accountId),
+          ...(pieces.recordId ? { recordId: pieces.recordId } : {}),
+        };
+        const update: Record<string, unknown> = {
+          accountId: new Types.ObjectId(input.accountId),
+          gameLabel: input.gameLabel,
+          status: GameRecordStatus.UNUSED,
+          apiResponse: input.apiResponse,
+          ...pieces,
+        };
+        return {
+          updateOne: {
+            filter,
+            update,
+            upsert: true,
+          },
+        };
+      });
+
+      await this.model.bulkWrite(operations);
+      
+      // Return the created records by finding them again
+      // Return saved/updated documents by refetching with accountId + gameLabel
+      const accountId = processedInputs[0]?.accountId;
+      const gameLabel = processedInputs[0]?.gameLabel;
+      if (accountId && gameLabel) {
+        return this.model.find({ 
+          accountId: new Types.ObjectId(accountId), 
+          gameLabel,
+          status: GameRecordStatus.UNUSED 
+        }).sort({ createdAt: -1 }).limit(processedInputs.length).exec();
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error in createUnusedBulk:', error);
+      throw error;
+    }
+  }
+
+  // API is trusted to return unique records per call; no pre-save deduplication needed
+
+  /**
+   * Check if a record already exists in the database based on recordId only
+   * @param accountId - Account ID
+   * @param gameLabel - Game label
+   * @param apiResponse - API response to extract unique identifiers from
+   * @returns Promise<boolean> - True if record exists
+   */
+  async recordExists(accountId: string, gameLabel: string, apiResponse: Record<string, unknown>): Promise<boolean> {
+    const pieces = this.extractFields(apiResponse);
+    
+    // Only check for recordId, ignore nonce-based duplicates
+    if (!pieces.recordId) {
+      return false; // No recordId to check, consider it new
+    }
+    
+    const filter: Record<string, unknown> = {
+      accountId: new Types.ObjectId(accountId),
+      recordId: pieces.recordId,
+    };
+    
+    const existing = await this.model.findOne(filter).exec();
+    return !!existing;
+  }
+
+  /**
    * Find all unused game records by wallet address and return only the data portion
    * @param walletAddress - The wallet address to search for
    * @returns Promise<Record<string, unknown>[]> - Array of data objects from apiResponse
@@ -43,6 +127,8 @@ export class GameRecordService {
     }).exec();
     
     return records.map(record => {
+      // For new format, apiResponse is the record itself
+      // For old format, it might be wrapped in data
       const data = record.apiResponse?.data || record.apiResponse;
       return data ? data as Record<string, unknown> : {} as Record<string, unknown>;
     });
@@ -71,8 +157,10 @@ export class GameRecordService {
   } {
     try {
       const root = apiResponse as any;
-      const data = root?.data ?? root?.CreateRecordGame?.data ?? root?.result?.data ?? undefined;
+      // Handle both old format (wrapped in data) and new format (direct record)
+      const data = root?.data ?? root?.CreateRecordGame?.data ?? root?.result?.data ?? root;
       if (!data) return {};
+      
       const recordId = typeof data.recordId === 'string' ? data.recordId : undefined;
       const gameId = typeof data.gameId === 'string' ? data.gameId : undefined;
       const wallet = typeof data.to === 'string' ? data.to : undefined;

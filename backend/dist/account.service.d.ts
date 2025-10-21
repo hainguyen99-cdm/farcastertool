@@ -47,4 +47,8 @@ export declare class AccountService {
     addPrivyToken(id: string, addPrivyTokenDto: AddPrivyTokenDto): Promise<Account>;
     removePrivyToken(id: string, gameLabel: string): Promise<Account>;
     getDecryptedPrivyToken(id: string, gameLabel: string): Promise<string>;
+    checkCreateRecordGameReadiness(id: string, gameLabel: string): Promise<{
+        ready: boolean;
+        issues: string[];
+    }>;
 }

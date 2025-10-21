@@ -46,7 +46,7 @@ export const GameRecordSchema = SchemaFactory.createForClass(GameRecord);
 
 // Ensure idempotency by unique (accountId, recordId) when recordId present
 GameRecordSchema.index({ accountId: 1, recordId: 1 }, { unique: true, sparse: true });
-// Fallback uniqueness when recordId is absent: (accountId, gameLabel, nonce)
-GameRecordSchema.index({ accountId: 1, gameLabel: 1, nonce: 1 }, { unique: true, sparse: true });
+// Note: Removed (accountId, gameLabel, nonce) index to allow multiple records with same nonce
+// Only recordId is used for uniqueness now
 
 

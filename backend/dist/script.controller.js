@@ -15,16 +15,37 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ScriptController = void 0;
 const common_1 = require("@nestjs/common");
 const script_execution_service_1 = require("./script-execution.service");
+const account_service_1 = require("./account.service");
 let ScriptController = class ScriptController {
     scriptExecutionService;
-    constructor(scriptExecutionService) {
+    accountService;
+    constructor(scriptExecutionService, accountService) {
         this.scriptExecutionService = scriptExecutionService;
+        this.accountService = accountService;
     }
     async executeScript(body) {
         return await this.scriptExecutionService.executeScript(body.accountId, body.actions, body.options);
     }
     async executeScriptOnMultipleAccounts(body) {
         return await this.scriptExecutionService.executeScriptOnMultipleAccounts(body.accountIds, body.actions, body.options);
+    }
+    async debugAccountReadiness(accountId, gameLabel) {
+        const readiness = await this.accountService.checkCreateRecordGameReadiness(accountId, gameLabel);
+        const account = await this.accountService.findOne(accountId);
+        return {
+            accountId,
+            gameLabel,
+            readiness,
+            account: {
+                id: account._id?.toString() || accountId,
+                name: account.name,
+                walletAddress: account.walletAddress,
+                privyTokens: account.privyTokens?.map(pt => ({
+                    gameLabel: pt.gameLabel,
+                    hasToken: !!pt.encryptedPrivyToken
+                })) || []
+            }
+        };
     }
 };
 exports.ScriptController = ScriptController;
@@ -42,8 +63,17 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], ScriptController.prototype, "executeScriptOnMultipleAccounts", null);
+__decorate([
+    (0, common_1.Get)('debug/:accountId/:gameLabel'),
+    __param(0, (0, common_1.Param)('accountId')),
+    __param(1, (0, common_1.Param)('gameLabel')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], ScriptController.prototype, "debugAccountReadiness", null);
 exports.ScriptController = ScriptController = __decorate([
     (0, common_1.Controller)('scripts'),
-    __metadata("design:paramtypes", [script_execution_service_1.ScriptExecutionService])
+    __metadata("design:paramtypes", [script_execution_service_1.ScriptExecutionService,
+        account_service_1.AccountService])
 ], ScriptController);
 //# sourceMappingURL=script.controller.js.map

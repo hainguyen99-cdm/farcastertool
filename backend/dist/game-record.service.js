@@ -39,6 +39,63 @@ let GameRecordService = class GameRecordService {
         const options = { upsert: true, new: true, setDefaultsOnInsert: true };
         return this.model.findOneAndUpdate(filter, update, options).exec();
     }
+    async createUnusedBulk(inputs) {
+        if (inputs.length === 0) {
+            return [];
+        }
+        try {
+            const processedInputs = inputs;
+            console.log(`Processing ${processedInputs.length} records from API response`);
+            const operations = processedInputs.map(input => {
+                const pieces = this.extractFields(input.apiResponse);
+                const filter = {
+                    accountId: new mongoose_2.Types.ObjectId(input.accountId),
+                    ...(pieces.recordId ? { recordId: pieces.recordId } : {}),
+                };
+                const update = {
+                    accountId: new mongoose_2.Types.ObjectId(input.accountId),
+                    gameLabel: input.gameLabel,
+                    status: game_record_schema_1.GameRecordStatus.UNUSED,
+                    apiResponse: input.apiResponse,
+                    ...pieces,
+                };
+                return {
+                    updateOne: {
+                        filter,
+                        update,
+                        upsert: true,
+                    },
+                };
+            });
+            await this.model.bulkWrite(operations);
+            const accountId = processedInputs[0]?.accountId;
+            const gameLabel = processedInputs[0]?.gameLabel;
+            if (accountId && gameLabel) {
+                return this.model.find({
+                    accountId: new mongoose_2.Types.ObjectId(accountId),
+                    gameLabel,
+                    status: game_record_schema_1.GameRecordStatus.UNUSED
+                }).sort({ createdAt: -1 }).limit(processedInputs.length).exec();
+            }
+            return [];
+        }
+        catch (error) {
+            console.error('Error in createUnusedBulk:', error);
+            throw error;
+        }
+    }
+    async recordExists(accountId, gameLabel, apiResponse) {
+        const pieces = this.extractFields(apiResponse);
+        if (!pieces.recordId) {
+            return false;
+        }
+        const filter = {
+            accountId: new mongoose_2.Types.ObjectId(accountId),
+            recordId: pieces.recordId,
+        };
+        const existing = await this.model.findOne(filter).exec();
+        return !!existing;
+    }
     async findByWalletAddress(walletAddress) {
         const records = await this.model.find({
             wallet: walletAddress,
@@ -55,7 +112,7 @@ let GameRecordService = class GameRecordService {
     extractFields(apiResponse) {
         try {
             const root = apiResponse;
-            const data = root?.data ?? root?.CreateRecordGame?.data ?? root?.result?.data ?? undefined;
+            const data = root?.data ?? root?.CreateRecordGame?.data ?? root?.result?.data ?? root;
             if (!data)
                 return {};
             const recordId = typeof data.recordId === 'string' ? data.recordId : undefined;

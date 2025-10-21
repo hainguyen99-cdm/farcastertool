@@ -344,7 +344,7 @@ export class FarcasterService {
 					),
 				),
 			);
-			
+			console.log('onboardingResponse', onboardingResponse.data);
 			const onboardingData = onboardingResponse.data as any;
 			const state = onboardingData?.result?.state;
 			
@@ -379,8 +379,8 @@ export class FarcasterService {
 						},
 					),
 				),
-			);
-			
+			);	
+			console.log('userResponse', userResponse.data);
 			const userData = userResponse.data as any;
 			const user = userData?.result?.user;
 			const extras = userData?.result?.extras;

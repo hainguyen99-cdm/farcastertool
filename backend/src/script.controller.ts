@@ -1,9 +1,13 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Get, Param } from '@nestjs/common';
 import { ScriptExecutionService, ScriptAction, ScriptExecutionOptions } from './script-execution.service';
+import { AccountService } from './account.service';
 
 @Controller('scripts')
 export class ScriptController {
-  constructor(private readonly scriptExecutionService: ScriptExecutionService) {}
+  constructor(
+    private readonly scriptExecutionService: ScriptExecutionService,
+    private readonly accountService: AccountService
+  ) {}
 
   @Post('execute')
   async executeScript(
@@ -33,6 +37,30 @@ export class ScriptController {
       body.actions,
       body.options
     );
+  }
+
+  @Get('debug/:accountId/:gameLabel')
+  async debugAccountReadiness(
+    @Param('accountId') accountId: string,
+    @Param('gameLabel') gameLabel: string
+  ) {
+    const readiness = await this.accountService.checkCreateRecordGameReadiness(accountId, gameLabel);
+    const account = await this.accountService.findOne(accountId);
+    
+    return {
+      accountId,
+      gameLabel,
+      readiness,
+      account: {
+        id: (account as any)._id?.toString() || accountId,
+        name: account.name,
+        walletAddress: account.walletAddress,
+        privyTokens: account.privyTokens?.map(pt => ({
+          gameLabel: pt.gameLabel,
+          hasToken: !!pt.encryptedPrivyToken
+        })) || []
+      }
+    };
   }
 }
 

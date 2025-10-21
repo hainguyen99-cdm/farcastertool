@@ -192,12 +192,17 @@ export class ActionProcessor {
           if (!gameLabel) {
             throw new Error('Missing gameLabel for CREATE_RECORD_GAME action');
           }
+          
+          // Check if account is ready for CREATE_RECORD_GAME
+          const readiness = await this.accountService.checkCreateRecordGameReadiness(accountId, gameLabel);
+          if (!readiness.ready) {
+            throw new Error(`Account not ready for CREATE_RECORD_GAME: ${readiness.issues.join(', ')}`);
+          }
+          
           // Get wallet from account service (ensures updated value)
           const account = await this.accountService.findOne(accountId);
           const wallet = account.walletAddress;
-          if (!wallet) {
-            throw new Error('Account has no walletAddress');
-          }
+          
           // Get privy token by label (decrypted)
           const privyToken = await this.accountService.getDecryptedPrivyToken(accountId, gameLabel);
           // Build payload and headers
@@ -228,23 +233,100 @@ export class ActionProcessor {
               timeout: 20000,
             },
           );
-          // Save log as UNUSED status
-          await this.loggingService.createLog({
-            accountId: new Types.ObjectId(accountId),
-            scenarioId: new Types.ObjectId(scenarioId),
-            actionType: action.type,
-            status: LogStatus.UNUSED,
-            result: response.data as Record<string, unknown>,
-          });
-          // Persist as unused game record
-          await this.gameRecordService.createUnused({
+          // Handle response data - could be array or single object
+          const responseData = response.data as any;
+          console.log('CREATE_RECORD_GAME API Response:', JSON.stringify(responseData, null, 2));
+          
+          // Extract records from the API response structure
+          let records: any[] = [];
+          if (responseData?.data && Array.isArray(responseData.data)) {
+            // API returns { status: true, data: [...] }
+            records = responseData.data;
+            console.log(`Found ${records.length} records in responseData.data`);
+          } else if (Array.isArray(responseData)) {
+            // API returns array directly
+            records = responseData;
+            console.log(`Found ${records.length} records in direct array response`);
+          } else {
+            // Single record response
+            records = [responseData];
+            console.log('Single record response, wrapping in array');
+          }
+          
+          if (records.length === 0) {
+            throw new Error('No records found in API response');
+          }
+          
+          // Log statistics about the records
+          const recordIds = records.map(r => r.recordId).filter(Boolean);
+          const uniqueRecordIds = new Set(recordIds);
+          
+      console.log(`Record statistics:`, {
+        totalRecords: records.length,
+        recordsWithId: recordIds.length,
+        uniqueRecordIds: uniqueRecordIds.size,
+        duplicateRecordIds: recordIds.length - uniqueRecordIds.size
+      });
+
+      console.log(`API returned ${records.length} unique records (no duplicates in API response)`);
+          
+          // Save each record individually
+          const gameRecordInputs = records.map(record => ({
             accountId,
             gameLabel,
-            apiResponse: response.data as Record<string, unknown>,
-          });
-          result = response.data as unknown;
-          // Return early since we already logged UNUSED and saved record
-          return { ...(previousResults || {}), [action.type]: { CreateRecordGame: response.data } };
+            apiResponse: record as Record<string, unknown>,
+          }));
+          
+          // Save logs for each record
+          for (const record of records) {
+            await this.loggingService.createLog({
+              accountId: new Types.ObjectId(accountId),
+              scenarioId: new Types.ObjectId(scenarioId),
+              actionType: action.type,
+              status: LogStatus.UNUSED,
+              result: record as Record<string, unknown>,
+            });
+          }
+          
+          // Persist all game records in bulk
+          try {
+            const savedRecords = await this.gameRecordService.createUnusedBulk(gameRecordInputs);
+            console.log(`Successfully saved ${savedRecords.length} game records`);
+          } catch (dbError) {
+            console.error('Bulk save failed, trying individual saves:', dbError);
+            // Fallback: try to save each record individually with duplicate handling
+            let successCount = 0;
+            let skipCount = 0;
+            for (const input of gameRecordInputs) {
+              try {
+                // Check if record already exists before attempting to save (recordId only)
+                const exists = await this.gameRecordService.recordExists(input.accountId, input.gameLabel, input.apiResponse);
+                if (exists) {
+                  const pieces = this.gameRecordService['extractFields'](input.apiResponse);
+                  console.log(`Skipping existing recordId: ${pieces.recordId || 'no-recordId'}`);
+                  skipCount++;
+                  continue;
+                }
+                
+                await this.gameRecordService.createUnused(input);
+                successCount++;
+                console.log(`Individual record saved successfully (${successCount}/${gameRecordInputs.length})`);
+              } catch (individualError) {
+                if (individualError.message?.includes('duplicate key')) {
+                  console.log('Skipping duplicate record:', individualError.message);
+                  skipCount++;
+                  // This is expected for duplicates, continue
+                } else {
+                  console.error('Failed to save individual record:', individualError);
+                }
+              }
+            }
+            console.log(`Individual save completed: ${successCount} records saved, ${skipCount} skipped (duplicates)`);
+          }
+          
+          result = records;
+          // Return the list of records
+          return { ...(previousResults || {}), [action.type]: records };
         }
         case ActionType.MINI_APP_EVENT:
         case 'MiniAppEvent': {
