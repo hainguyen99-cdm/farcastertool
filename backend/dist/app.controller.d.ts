@@ -2,6 +2,7 @@ import { AppService } from './app.service';
 import { TestService } from './test.service';
 import { RedisTestService } from './redis-test.service';
 import { StatsService } from './stats.service';
+import { Request, Response } from 'express';
 export declare class AppController {
     private readonly appService;
     private readonly testService;
@@ -24,4 +25,5 @@ export declare class AppController {
         data: any;
     }>;
     getStats(): Promise<any>;
+    corsTest(req: Request, res: Response): void;
 }

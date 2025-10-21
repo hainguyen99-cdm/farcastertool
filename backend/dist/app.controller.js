@@ -68,6 +68,15 @@ let AppController = class AppController {
     async getStats() {
         return await this.statsService.getDashboardStats();
     }
+    corsTest(req, res) {
+        console.log('CORS test request headers:', req.headers);
+        res.json({
+            message: 'CORS test successful',
+            origin: req.headers.origin,
+            userAgent: req.headers['user-agent'],
+            timestamp: new Date().toISOString()
+        });
+    }
 };
 exports.AppController = AppController;
 __decorate([
@@ -101,6 +110,14 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AppController.prototype, "getStats", null);
+__decorate([
+    (0, common_1.Get)('cors-test'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], AppController.prototype, "corsTest", null);
 exports.AppController = AppController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [app_service_1.AppService,

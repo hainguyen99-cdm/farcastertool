@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Req, Res } from '@nestjs/common';
 import { AppService } from './app.service';
 import { TestService } from './test.service';
 import { RedisTestService } from './redis-test.service';
 import { StatsService } from './stats.service';
+import { Request, Response } from 'express';
 
 @Controller()
 export class AppController {
@@ -59,5 +60,16 @@ export class AppController {
   @Get('stats')
   async getStats(): Promise<any> {
     return await this.statsService.getDashboardStats();
+  }
+
+  @Get('cors-test')
+  corsTest(@Req() req: Request, @Res() res: Response) {
+    console.log('CORS test request headers:', req.headers);
+    res.json({
+      message: 'CORS test successful',
+      origin: req.headers.origin,
+      userAgent: req.headers['user-agent'],
+      timestamp: new Date().toISOString()
+    });
   }
 }
