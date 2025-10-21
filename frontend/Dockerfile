@@ -7,8 +7,8 @@ RUN npm ci --legacy-peer-deps
 
 FROM node:20-alpine AS build
 WORKDIR /app
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ARG BACKEND_URL
+ENV BACKEND_URL=${BACKEND_URL}
 ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -26,7 +26,7 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/next.config.mjs ./next.config.mjs
 # Copy package.json for start script (no npm install here)
 COPY package*.json ./
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV BACKEND_URL=${BACKEND_URL}
 
 EXPOSE 3000
 CMD ["npm", "run", "start"]

@@ -3,18 +3,10 @@ const normalizeUrl = (url: string): string => url.replace(/\/$/, '');
 const dedupe = (arr: string[]): string[] => Array.from(new Set(arr));
 
 export const resolveBackendCandidates = (): string[] => {
-  const configured = process.env.NEXT_PUBLIC_API_URL || '';
+  // Only use server-side environment variables to prevent client-side CORS issues
   const serverOnly = process.env.BACKEND_URL || process.env.API_BASE_URL || '';
   
-  // In Docker environment, use the configured URL directly
-  // In local development, map backend to localhost
-  const mappedConfigured = configured.includes('://backend')
-    ? configured.replace('://backend', '://127.0.0.1')
-    : configured;
-    
   const baseCandidates = [
-    configured, // Use the original configured URL first (for Docker)
-    mappedConfigured, // Then the mapped version (for local dev)
     serverOnly,
     'http://backend:3002', // Docker internal network
     'http://host.docker.internal:3002', // Docker host access

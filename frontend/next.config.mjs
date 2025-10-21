@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003',
+    // Remove NEXT_PUBLIC_API_URL to prevent client-side CORS issues
+    // Use BACKEND_URL or API_BASE_URL for server-side only
   },
 };
 
