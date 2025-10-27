@@ -113,14 +113,36 @@ export class ScriptExecutionService {
     accountIds: string[],
     actions: ScriptAction[],
     options: ScriptExecutionOptions = {}
-  ): Promise<ExecuteScriptResult[]> {
+  ): Promise<{ status: string; message: string; accounts: string[] }> {
+    // Process accounts in the background to avoid gateway timeout
+    this.processMultipleAccountsInBackground(accountIds, actions, options).catch(err => {
+      console.error('Error processing multiple accounts:', err);
+    });
+
+    return {
+      status: 'started',
+      message: `Started processing ${accountIds.length} accounts in background`,
+      accounts: accountIds,
+    };
+  }
+
+  private async processMultipleAccountsInBackground(
+    accountIds: string[],
+    actions: ScriptAction[],
+    options: ScriptExecutionOptions
+  ): Promise<void> {
     const results: ExecuteScriptResult[] = [];
+    const startTime = Date.now();
+    console.log(`[ScriptExecution] Starting background processing for ${accountIds.length} accounts`);
     
-    for (const accountId of accountIds) {
+    for (let i = 0; i < accountIds.length; i++) {
+      const accountId = accountIds[i];
       try {
+        console.log(`[ScriptExecution] Processing account ${i + 1}/${accountIds.length}: ${accountId}`);
         const result = await this.executeScript(accountId, actions, options);
         results.push(result);
       } catch (error) {
+        console.error(`[ScriptExecution] Error processing account ${accountId}:`, error);
         results.push({
           accountId,
           actionsExecuted: 0,
@@ -134,7 +156,12 @@ export class ScriptExecutionService {
       }
     }
 
-    return results;
+    const duration = Date.now() - startTime;
+    const successful = results.filter(r => r.actionsExecuted > 0).length;
+    const failed = results.length - successful;
+    
+    console.log(`[ScriptExecution] Completed processing ${results.length} accounts in ${duration}ms`);
+    console.log(`[ScriptExecution] Successful: ${successful}, Failed: ${failed}`);
   }
 }
 

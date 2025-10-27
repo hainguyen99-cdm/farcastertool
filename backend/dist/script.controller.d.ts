@@ -13,7 +13,11 @@ export declare class ScriptController {
         accountIds: string[];
         actions: ScriptAction[];
         options?: ScriptExecutionOptions;
-    }): Promise<import("./script-execution.service").ExecuteScriptResult[]>;
+    }): Promise<{
+        status: string;
+        message: string;
+        accounts: string[];
+    }>;
     debugAccountReadiness(accountId: string, gameLabel: string): Promise<{
         accountId: string;
         gameLabel: string;

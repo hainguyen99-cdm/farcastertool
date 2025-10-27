@@ -28,5 +28,10 @@ export declare class ScriptExecutionService {
     private readonly accountModel;
     constructor(actionsQueue: Queue, accountModel: Model<Account>);
     executeScript(accountId: string, actions: ScriptAction[], options?: ScriptExecutionOptions): Promise<ExecuteScriptResult>;
-    executeScriptOnMultipleAccounts(accountIds: string[], actions: ScriptAction[], options?: ScriptExecutionOptions): Promise<ExecuteScriptResult[]>;
+    executeScriptOnMultipleAccounts(accountIds: string[], actions: ScriptAction[], options?: ScriptExecutionOptions): Promise<{
+        status: string;
+        message: string;
+        accounts: string[];
+    }>;
+    private processMultipleAccountsInBackground;
 }
