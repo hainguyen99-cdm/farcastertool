@@ -5,7 +5,7 @@ interface ResponseStats {
   trueResponses: number;
   falseResponses: number;
   lastResetTime: Date;
-  randomPositions?: number[]; // Danh sách các vị trí random được chọn trong window này
+  randomPosition?: number; // Vị trí random được chọn trong window này
 }
 
 @Injectable()
@@ -15,14 +15,14 @@ export class RandomResponseService {
     trueResponses: 0,
     falseResponses: 0,
     lastResetTime: new Date(),
-    randomPositions: undefined,
+    randomPosition: undefined,
   };
 
   private readonly RESET_INTERVAL_MS = 30 * 1000; // 30 seconds
 
   /**
    * Get random response based on 30-second window
-   * Returns true for exactly 10 random requests per 30-second window
+   * Returns true for exactly 1 random request per 30-second window
    * @returns Promise<{ success: boolean; stats: ResponseStats }>
    */
   async getRandomResponse(): Promise<{ success: boolean; stats: ResponseStats }> {
@@ -36,24 +36,16 @@ export class RandomResponseService {
 
     this.stats.totalRequests++;
 
-    // Random logic: chọn 10 vị trí random ngay từ request đầu tiên
-    if (this.stats.randomPositions === undefined) {
-      // Ước tính số request có thể có trong 30s (ví dụ: 100 requests)
-      const estimatedMaxRequests = 100;
-      const numberOfTrueResponses = 10;
-      
-      // Tạo array các số từ 1 đến estimatedMaxRequests
-      const allPositions = Array.from({ length: estimatedMaxRequests }, (_, i) => i + 1);
-      
-      // Shuffle và lấy 10 vị trí đầu tiên
-      const shuffled = allPositions.sort(() => Math.random() - 0.5);
-      this.stats.randomPositions = shuffled.slice(0, numberOfTrueResponses).sort((a, b) => a - b);
-      
-      console.log(`[RandomResponse] Random positions set to: [${this.stats.randomPositions.join(', ')}]`);
+    // Random logic: chọn vị trí random ngay từ request đầu tiên
+    if (this.stats.randomPosition === undefined) {
+      // Ước tính số request có thể có trong 30s (ví dụ: 30 requests)
+      const estimatedMaxRequests = 30;
+      this.stats.randomPosition = Math.floor(Math.random() * estimatedMaxRequests) + 1;
+      console.log(`[RandomResponse] Random position set to: ${this.stats.randomPosition}`);
     }
 
-    // Kiểm tra xem request hiện tại có phải là một trong các vị trí random không
-    const shouldReturnTrue = this.stats.randomPositions.includes(this.stats.totalRequests);
+    // Kiểm tra xem request hiện tại có phải là vị trí random không
+    const shouldReturnTrue = (this.stats.totalRequests === this.stats.randomPosition);
 
     if (shouldReturnTrue) {
       this.stats.trueResponses++;
@@ -89,7 +81,7 @@ export class RandomResponseService {
       trueResponses: 0,
       falseResponses: 0,
       lastResetTime: resetTime,
-      randomPositions: undefined,
+      randomPosition: undefined,
     };
     console.log(`[RandomResponse] Stats reset at ${resetTime.toISOString()}`);
   }
