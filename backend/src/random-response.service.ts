@@ -5,6 +5,7 @@ interface ResponseStats {
   trueResponses: number;
   falseResponses: number;
   lastResetTime: Date;
+  randomPosition?: number; // Vị trí random được chọn trong window này
 }
 
 @Injectable()
@@ -14,13 +15,14 @@ export class RandomResponseService {
     trueResponses: 0,
     falseResponses: 0,
     lastResetTime: new Date(),
+    randomPosition: undefined,
   };
 
   private readonly RESET_INTERVAL_MS = 30 * 1000; // 30 seconds
 
   /**
    * Get random response based on 30-second window
-   * Returns true for exactly 1 request per 30-second window
+   * Returns true for exactly 1 random request per 30-second window
    * @returns Promise<{ success: boolean; stats: ResponseStats }>
    */
   async getRandomResponse(): Promise<{ success: boolean; stats: ResponseStats }> {
@@ -34,9 +36,16 @@ export class RandomResponseService {
 
     this.stats.totalRequests++;
 
-    // If we haven't returned true yet in this window, return true
-    // Otherwise, return false
-    const shouldReturnTrue = this.stats.trueResponses === 0;
+    // Random logic: chọn vị trí random ngay từ request đầu tiên
+    if (this.stats.randomPosition === undefined) {
+      // Ước tính số request có thể có trong 30s (ví dụ: 30 requests)
+      const estimatedMaxRequests = 30;
+      this.stats.randomPosition = Math.floor(Math.random() * estimatedMaxRequests) + 1;
+      console.log(`[RandomResponse] Random position set to: ${this.stats.randomPosition}`);
+    }
+
+    // Kiểm tra xem request hiện tại có phải là vị trí random không
+    const shouldReturnTrue = (this.stats.totalRequests === this.stats.randomPosition);
 
     if (shouldReturnTrue) {
       this.stats.trueResponses++;
@@ -72,6 +81,7 @@ export class RandomResponseService {
       trueResponses: 0,
       falseResponses: 0,
       lastResetTime: resetTime,
+      randomPosition: undefined,
     };
     console.log(`[RandomResponse] Stats reset at ${resetTime.toISOString()}`);
   }

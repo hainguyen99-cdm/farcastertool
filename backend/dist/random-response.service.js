@@ -14,6 +14,7 @@ let RandomResponseService = class RandomResponseService {
         trueResponses: 0,
         falseResponses: 0,
         lastResetTime: new Date(),
+        randomPosition: undefined,
     };
     RESET_INTERVAL_MS = 30 * 1000;
     async getRandomResponse() {
@@ -23,7 +24,12 @@ let RandomResponseService = class RandomResponseService {
             this.resetStats(now);
         }
         this.stats.totalRequests++;
-        const shouldReturnTrue = this.stats.trueResponses === 0;
+        if (this.stats.randomPosition === undefined) {
+            const estimatedMaxRequests = 30;
+            this.stats.randomPosition = Math.floor(Math.random() * estimatedMaxRequests) + 1;
+            console.log(`[RandomResponse] Random position set to: ${this.stats.randomPosition}`);
+        }
+        const shouldReturnTrue = (this.stats.totalRequests === this.stats.randomPosition);
         if (shouldReturnTrue) {
             this.stats.trueResponses++;
         }
@@ -48,6 +54,7 @@ let RandomResponseService = class RandomResponseService {
             trueResponses: 0,
             falseResponses: 0,
             lastResetTime: resetTime,
+            randomPosition: undefined,
         };
         console.log(`[RandomResponse] Stats reset at ${resetTime.toISOString()}`);
     }

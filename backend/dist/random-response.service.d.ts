@@ -3,6 +3,7 @@ interface ResponseStats {
     trueResponses: number;
     falseResponses: number;
     lastResetTime: Date;
+    randomPosition?: number;
 }
 export declare class RandomResponseService {
     private stats;
