@@ -18,16 +18,19 @@ const app_service_1 = require("./app.service");
 const test_service_1 = require("./test.service");
 const redis_test_service_1 = require("./redis-test.service");
 const stats_service_1 = require("./stats.service");
+const random_response_service_1 = require("./random-response.service");
 let AppController = class AppController {
     appService;
     testService;
     redisTestService;
     statsService;
-    constructor(appService, testService, redisTestService, statsService) {
+    randomResponseService;
+    constructor(appService, testService, redisTestService, statsService, randomResponseService) {
         this.appService = appService;
         this.testService = testService;
         this.redisTestService = redisTestService;
         this.statsService = statsService;
+        this.randomResponseService = randomResponseService;
     }
     getHello() {
         return this.appService.getHello();
@@ -77,6 +80,17 @@ let AppController = class AppController {
             timestamp: new Date().toISOString()
         });
     }
+    async getRandomResponse() {
+        const result = await this.randomResponseService.getRandomResponse();
+        console.log(`[RandomResponse] Request #${result.stats.totalRequests}: ${result.success ? 'TRUE' : 'FALSE'}`);
+        return result;
+    }
+    getRandomResponseStats() {
+        return this.randomResponseService.getStats();
+    }
+    resetRandomResponseStats() {
+        return this.randomResponseService.resetStatsManually();
+    }
 };
 exports.AppController = AppController;
 __decorate([
@@ -118,11 +132,30 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], AppController.prototype, "corsTest", null);
+__decorate([
+    (0, common_1.Get)('random-response'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AppController.prototype, "getRandomResponse", null);
+__decorate([
+    (0, common_1.Get)('random-response/stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Object)
+], AppController.prototype, "getRandomResponseStats", null);
+__decorate([
+    (0, common_1.Post)('random-response/reset'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Object)
+], AppController.prototype, "resetRandomResponseStats", null);
 exports.AppController = AppController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [app_service_1.AppService,
         test_service_1.TestService,
         redis_test_service_1.RedisTestService,
-        stats_service_1.StatsService])
+        stats_service_1.StatsService,
+        random_response_service_1.RandomResponseService])
 ], AppController);
 //# sourceMappingURL=app.controller.js.map

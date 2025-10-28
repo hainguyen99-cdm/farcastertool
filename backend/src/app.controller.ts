@@ -3,6 +3,7 @@ import { AppService } from './app.service';
 import { TestService } from './test.service';
 import { RedisTestService } from './redis-test.service';
 import { StatsService } from './stats.service';
+import { RandomResponseService } from './random-response.service';
 import { Request, Response } from 'express';
 
 @Controller()
@@ -12,6 +13,7 @@ export class AppController {
     private readonly testService: TestService,
     private readonly redisTestService: RedisTestService,
     private readonly statsService: StatsService,
+    private readonly randomResponseService: RandomResponseService,
   ) {}
 
   @Get()
@@ -71,5 +73,34 @@ export class AppController {
       userAgent: req.headers['user-agent'],
       timestamp: new Date().toISOString()
     });
+  }
+
+  /**
+   * Random response API - returns true for exactly 1 request per 30-second window
+   * @returns Promise<{ success: boolean; stats: any }>
+   */
+  @Get('random-response')
+  async getRandomResponse(): Promise<{ success: boolean; stats: any }> {
+    const result = await this.randomResponseService.getRandomResponse();
+    console.log(`[RandomResponse] Request #${result.stats.totalRequests}: ${result.success ? 'TRUE' : 'FALSE'}`);
+    return result;
+  }
+
+  /**
+   * Get current random response stats without making a request
+   * @returns ResponseStats
+   */
+  @Get('random-response/stats')
+  getRandomResponseStats(): any {
+    return this.randomResponseService.getStats();
+  }
+
+  /**
+   * Manually reset random response stats
+   * @returns ResponseStats
+   */
+  @Post('random-response/reset')
+  resetRandomResponseStats(): any {
+    return this.randomResponseService.resetStatsManually();
   }
 }

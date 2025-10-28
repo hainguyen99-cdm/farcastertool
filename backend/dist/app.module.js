@@ -39,6 +39,7 @@ const stats_service_1 = require("./stats.service");
 const stats_controller_1 = require("./stats.controller");
 const script_execution_service_1 = require("./script-execution.service");
 const script_controller_1 = require("./script.controller");
+const random_response_service_1 = require("./random-response.service");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -81,7 +82,7 @@ exports.AppModule = AppModule = __decorate([
             axios_1.HttpModule,
         ],
         controllers: [app_controller_1.AppController, log_controller_1.LogController, account_controller_1.AccountController, scenario_controller_1.ScenarioController, stats_controller_1.StatsController, script_controller_1.ScriptController, game_record_controller_1.GameRecordController],
-        providers: [app_service_1.AppService, test_service_1.TestService, test_queue_processor_1.TestQueueProcessor, redis_test_service_1.RedisTestService, encryption_service_1.EncryptionService, account_service_1.AccountService, scenario_service_1.ScenarioService, logging_service_1.LoggingService, farcaster_service_1.FarcasterService, action_processor_1.ActionProcessor, scenario_execution_service_1.ScenarioExecutionService, stats_service_1.StatsService, script_execution_service_1.ScriptExecutionService, signature_header_service_1.SignatureHeaderService, game_record_service_1.GameRecordService],
+        providers: [app_service_1.AppService, test_service_1.TestService, test_queue_processor_1.TestQueueProcessor, redis_test_service_1.RedisTestService, encryption_service_1.EncryptionService, account_service_1.AccountService, scenario_service_1.ScenarioService, logging_service_1.LoggingService, farcaster_service_1.FarcasterService, action_processor_1.ActionProcessor, scenario_execution_service_1.ScenarioExecutionService, stats_service_1.StatsService, script_execution_service_1.ScriptExecutionService, signature_header_service_1.SignatureHeaderService, game_record_service_1.GameRecordService, random_response_service_1.RandomResponseService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

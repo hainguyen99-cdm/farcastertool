@@ -30,6 +30,7 @@ import { StatsService } from './stats.service';
 import { StatsController } from './stats.controller';
 import { ScriptExecutionService } from './script-execution.service';
 import { ScriptController } from './script.controller';
+import { RandomResponseService } from './random-response.service';
 
 @Module({
   imports: [
@@ -69,6 +70,6 @@ import { ScriptController } from './script.controller';
     HttpModule,
   ],
   controllers: [AppController, LogController, AccountController, ScenarioController, StatsController, ScriptController, GameRecordController],
-  providers: [AppService, TestService, TestQueueProcessor, RedisTestService, EncryptionService, AccountService, ScenarioService, LoggingService, FarcasterService, ActionProcessor, ScenarioExecutionService, StatsService, ScriptExecutionService, SignatureHeaderService, GameRecordService],
+  providers: [AppService, TestService, TestQueueProcessor, RedisTestService, EncryptionService, AccountService, ScenarioService, LoggingService, FarcasterService, ActionProcessor, ScenarioExecutionService, StatsService, ScriptExecutionService, SignatureHeaderService, GameRecordService, RandomResponseService],
 })
 export class AppModule {}
