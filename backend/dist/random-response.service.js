@@ -14,9 +14,9 @@ let RandomResponseService = class RandomResponseService {
         trueResponses: 0,
         falseResponses: 0,
         lastResetTime: new Date(),
-        randomPositions: undefined,
+        randomPosition: undefined,
     };
-    RESET_INTERVAL_MS = 30 * 1000;
+    RESET_INTERVAL_MS = 15 * 1000;
     async getRandomResponse() {
         const now = new Date();
         const timeSinceLastReset = now.getTime() - this.stats.lastResetTime.getTime();
@@ -24,15 +24,12 @@ let RandomResponseService = class RandomResponseService {
             this.resetStats(now);
         }
         this.stats.totalRequests++;
-        if (this.stats.randomPositions === undefined) {
-            const estimatedMaxRequests = 100;
-            const numberOfTrueResponses = 10;
-            const allPositions = Array.from({ length: estimatedMaxRequests }, (_, i) => i + 1);
-            const shuffled = allPositions.sort(() => Math.random() - 0.5);
-            this.stats.randomPositions = shuffled.slice(0, numberOfTrueResponses).sort((a, b) => a - b);
-            console.log(`[RandomResponse] Random positions set to: [${this.stats.randomPositions.join(', ')}]`);
+        if (this.stats.randomPosition === undefined) {
+            const estimatedMaxRequests = 15;
+            this.stats.randomPosition = Math.floor(Math.random() * estimatedMaxRequests) + 1;
+            console.log(`[RandomResponse] Random position set to: ${this.stats.randomPosition}`);
         }
-        const shouldReturnTrue = this.stats.randomPositions.includes(this.stats.totalRequests);
+        const shouldReturnTrue = (this.stats.totalRequests === this.stats.randomPosition);
         if (shouldReturnTrue) {
             this.stats.trueResponses++;
         }
@@ -57,7 +54,7 @@ let RandomResponseService = class RandomResponseService {
             trueResponses: 0,
             falseResponses: 0,
             lastResetTime: resetTime,
-            randomPositions: undefined,
+            randomPosition: undefined,
         };
         console.log(`[RandomResponse] Stats reset at ${resetTime.toISOString()}`);
     }

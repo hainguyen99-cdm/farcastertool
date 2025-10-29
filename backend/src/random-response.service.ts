@@ -18,7 +18,7 @@ export class RandomResponseService {
     randomPosition: undefined,
   };
 
-  private readonly RESET_INTERVAL_MS = 30 * 1000; // 30 seconds
+  private readonly RESET_INTERVAL_MS = 15 * 1000; // 15 seconds
 
   /**
    * Get random response based on 30-second window
@@ -38,8 +38,8 @@ export class RandomResponseService {
 
     // Random logic: chọn vị trí random ngay từ request đầu tiên
     if (this.stats.randomPosition === undefined) {
-      // Ước tính số request có thể có trong 30s (ví dụ: 30 requests)
-      const estimatedMaxRequests = 30;
+      // Ước tính số request có thể có trong 15s (ví dụ: 15 requests)
+      const estimatedMaxRequests = 15;
       this.stats.randomPosition = Math.floor(Math.random() * estimatedMaxRequests) + 1;
       console.log(`[RandomResponse] Random position set to: ${this.stats.randomPosition}`);
     }
