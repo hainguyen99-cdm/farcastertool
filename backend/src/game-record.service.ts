@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { GameRecord, GameRecordStatus } from './game-record.schema';
+import { SignatureHeaderService } from './signature-header.service';
+import { Account, AccountStatus } from './account.schema';
 
 export interface CreateGameRecordInput {
   accountId: string;
@@ -9,9 +11,19 @@ export interface CreateGameRecordInput {
   apiResponse: Record<string, unknown>;
 }
 
+export interface CreateGameRecordWithTokenInput {
+  privitoken: string;
+  gameLabel: string;
+  wallet: string;
+}
+
 @Injectable()
 export class GameRecordService {
-  constructor(@InjectModel(GameRecord.name) private readonly model: Model<GameRecord>) {}
+  constructor(
+    @InjectModel(GameRecord.name) private readonly model: Model<GameRecord>,
+    @InjectModel(Account.name) private readonly accountModel: Model<Account>,
+    private readonly signatureHeaderService: SignatureHeaderService,
+  ) {}
 
   async createUnused(input: CreateGameRecordInput): Promise<GameRecord> {
     const pieces = this.extractFields(input.apiResponse);
@@ -118,6 +130,84 @@ export class GameRecordService {
       { status: GameRecordStatus.USED },
       { new: true }
     ).exec();
+  }
+
+  /**
+   * Create a game record with provided privitoken, gameLabel, and wallet
+   * Can save record even if account doesn't exist in database
+   * @param input - Input containing privitoken, gameLabel, and wallet
+   * @returns Created game record
+   */
+  async createWithProvidedToken(input: CreateGameRecordWithTokenInput): Promise<GameRecord> {
+    const { privitoken, gameLabel, wallet } = input;
+    
+    // Find or create account by wallet address
+    let account = await this.accountModel.findOne({ walletAddress: wallet }).exec();
+    
+    if (!account) {
+      // Create a minimal account if it doesn't exist
+      account = new this.accountModel({
+        name: `Wallet-${wallet.substring(0, 8)}`,
+        encryptedToken: '', // Empty token since we're using provided privitoken
+        status: AccountStatus.ACTIVE,
+        walletAddress: wallet,
+      });
+      account = await account.save();
+    }
+    
+    const accountId = account._id.toString();
+    
+    // Build payload and headers for API call
+    const payload = JSON.stringify({ wallet });
+    const apiKey = process.env.RPC_VERSION_API_KEY || '';
+    const secret = process.env.RPC_VERSION_SECRET || process.env.RPC_VERSION_SECRET_KEY || '';
+    
+    if (!apiKey || !secret) {
+      throw new Error('Missing RPC_VERSION_API_KEY or RPC_VERSION_SECRET in env');
+    }
+    
+    const signature = this.signatureHeaderService.generateSignature(apiKey, secret, payload);
+    if (!signature) {
+      throw new Error('Failed to generate signature');
+    }
+    
+    // Make API call
+    const axios = await import('axios');
+    const response = await axios.default.post(
+      'https://maze-api.uptopia.xyz/api/v1/bot/signature',
+      { wallet },
+      {
+        headers: {
+          'accept': '*/*',
+          'x-api-key': apiKey,
+          'signature': signature,
+          'Authorization': `Bearer ${privitoken}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 20000,
+      },
+    );
+    
+    // Handle response data - could be array or single object
+    const responseData = response.data as any;
+    console.log('CREATE_RECORD_GAME API Response:', JSON.stringify(responseData, null, 2));
+    
+    // Normalize response to array format
+    const records = Array.isArray(responseData) ? responseData : [responseData];
+    
+    if (records.length === 0) {
+      throw new Error('No records returned from API');
+    }
+    
+    // Use the first record (or handle multiple if needed)
+    const apiResponse = records[0];
+    
+    // Create game record
+    return this.createUnused({
+      accountId,
+      gameLabel,
+      apiResponse,
+    });
   }
 
   private extractFields(apiResponse: Record<string, unknown>): {

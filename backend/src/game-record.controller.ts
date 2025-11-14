@@ -1,6 +1,12 @@
-import { Controller, Get, Param, Patch } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Post, Body } from '@nestjs/common';
 import { GameRecordService } from './game-record.service';
 import { GameRecord } from './game-record.schema';
+
+export interface CreateGameRecordWithTokenDto {
+  privitoken: string;
+  gameLabel: string;
+  wallet: string;
+}
 
 /**
  * Controller for managing game records
@@ -32,5 +38,19 @@ export class GameRecordController {
   @Patch(':recordId/status/used')
   async updateStatusToUsed(@Param('recordId') recordId: string): Promise<GameRecord | null> {
     return await this.gameRecordService.updateStatusToUsed(recordId);
+  }
+
+  /**
+   * Create a game record with provided privitoken, gameLabel, and wallet
+   * Can save record even if account doesn't exist in database
+   * @param createDto - Request body containing privitoken, gameLabel, and wallet
+   * @returns Created game record
+   * @example
+   * POST /game-records/create-with-token
+   * Body: { "privitoken": "...", "gameLabel": "mazeRunner", "wallet": "0x..." }
+   */
+  @Post('create-with-token')
+  async createWithToken(@Body() createDto: CreateGameRecordWithTokenDto): Promise<GameRecord> {
+    return await this.gameRecordService.createWithProvidedToken(createDto);
   }
 }
