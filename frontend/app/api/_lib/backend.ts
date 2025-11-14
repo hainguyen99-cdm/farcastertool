@@ -3,19 +3,20 @@ const normalizeUrl = (url: string): string => url.replace(/\/$/, '');
 const dedupe = (arr: string[]): string[] => Array.from(new Set(arr));
 
 export const resolveBackendCandidates = (): string[] => {
-  // Use nginx proxy route for CORS handling
-  const nginxProxy = process.env.NGINX_PROXY_URL || 'http://localhost:3000';
+  const nginxProxy = process.env.NGINX_PROXY_URL;
   const serverOnly = process.env.BACKEND_URL || process.env.API_BASE_URL || '';
   
-  const baseCandidates = [
-    `${nginxProxy}/backend-api`, // Nginx proxy with CORS headers
-    serverOnly, // Direct backend connection
-    'http://backend:3002', // Docker internal network
-    'http://host.docker.internal:3002', // Docker host access
-    'http://172.17.0.1:3002', // Docker bridge network
-    'http://127.0.0.1:3002', // Local development
-    'http://localhost:3002', // Local development fallback
+  const directCandidates = [
+    serverOnly,
+    'http://backend:3002',
+    'http://host.docker.internal:3002',
+    'http://172.17.0.1:3002',
+    'http://127.0.0.1:3002',
+    'http://localhost:3002',
   ].filter(Boolean) as string[];
+
+  const proxyCandidates = nginxProxy ? [`${nginxProxy}/backend-api`] : [];
+  const baseCandidates = [...directCandidates, ...proxyCandidates];
   return dedupe(baseCandidates.map(normalizeUrl));
 };
 

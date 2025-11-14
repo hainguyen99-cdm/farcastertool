@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { GameRecord, GameRecordStatus } from './game-record.schema';
 import { SignatureHeaderService } from './signature-header.service';
 import { Account, AccountStatus } from './account.schema';
+import { EncryptionService } from './encryption.service';
 
 export interface CreateGameRecordInput {
   accountId: string;
@@ -23,6 +24,7 @@ export class GameRecordService {
     @InjectModel(GameRecord.name) private readonly model: Model<GameRecord>,
     @InjectModel(Account.name) private readonly accountModel: Model<Account>,
     private readonly signatureHeaderService: SignatureHeaderService,
+    private readonly encryptionService: EncryptionService,
   ) {}
 
   async createUnused(input: CreateGameRecordInput): Promise<GameRecord> {
@@ -138,7 +140,7 @@ export class GameRecordService {
    * @param input - Input containing privitoken, gameLabel, and wallet
    * @returns Created game record
    */
-  async createWithProvidedToken(input: CreateGameRecordWithTokenInput): Promise<GameRecord> {
+  async createWithProvidedToken(input: CreateGameRecordWithTokenInput): Promise<GameRecord[]> {
     const { privitoken, gameLabel, wallet } = input;
     
     // Find or create account by wallet address
@@ -146,9 +148,10 @@ export class GameRecordService {
     
     if (!account) {
       // Create a minimal account if it doesn't exist
+      const placeholderEncryptedToken = this.encryptionService.encrypt('external-game-record');
       account = new this.accountModel({
         name: `Wallet-${wallet.substring(0, 8)}`,
-        encryptedToken: '', // Empty token since we're using provided privitoken
+        encryptedToken: placeholderEncryptedToken,
         status: AccountStatus.ACTIVE,
         walletAddress: wallet,
       });
@@ -189,25 +192,51 @@ export class GameRecordService {
     );
     
     // Handle response data - could be array or single object
-    const responseData = response.data as any;
+    const responseData = response.data as Record<string, unknown>;
     console.log('CREATE_RECORD_GAME API Response:', JSON.stringify(responseData, null, 2));
     
-    // Normalize response to array format
-    const records = Array.isArray(responseData) ? responseData : [responseData];
+    // Extract records consistent with action processor
+    let records: Record<string, unknown>[] = [];
+    if (Array.isArray((responseData as any)?.data)) {
+      records = (responseData as any).data as Record<string, unknown>[];
+      console.log(`Found ${records.length} records in responseData.data`);
+    } else if (Array.isArray(responseData)) {
+      records = responseData as unknown as Record<string, unknown>[];
+      console.log(`Found ${records.length} records in direct array response`);
+    } else {
+      records = [responseData];
+      console.log('Single record response, wrapping in array');
+    }
     
     if (records.length === 0) {
       throw new Error('No records returned from API');
     }
     
-    // Use the first record (or handle multiple if needed)
-    const apiResponse = records[0];
-    
-    // Create game record
-    return this.createUnused({
+    // Build inputs for persistence
+    const gameRecordInputs = records.map(record => ({
       accountId,
       gameLabel,
-      apiResponse,
-    });
+      apiResponse: record,
+    }));
+    
+    let savedRecords: GameRecord[] = [];
+    try {
+      savedRecords = await this.createUnusedBulk(gameRecordInputs);
+      console.log(`Successfully saved ${savedRecords.length} game records via bulk operation`);
+    } catch (bulkError) {
+      console.error('Bulk save failed, trying individual saves:', bulkError);
+      for (const inputItem of gameRecordInputs) {
+        try {
+          const savedRecord = await this.createUnused(inputItem);
+          savedRecords.push(savedRecord);
+        } catch (individualError) {
+          console.error('Failed to save individual record:', individualError);
+        }
+      }
+      console.log(`Individual save completed: ${savedRecords.length} records saved`);
+    }
+    
+    return savedRecords;
   }
 
   private extractFields(apiResponse: Record<string, unknown>): {

@@ -50,7 +50,7 @@ export class GameRecordController {
    * Body: { "privitoken": "...", "gameLabel": "mazeRunner", "wallet": "0x..." }
    */
   @Post('create-with-token')
-  async createWithToken(@Body() createDto: CreateGameRecordWithTokenDto): Promise<GameRecord> {
+  async createWithToken(@Body() createDto: CreateGameRecordWithTokenDto): Promise<GameRecord[]> {
     return await this.gameRecordService.createWithProvidedToken(createDto);
   }
 }

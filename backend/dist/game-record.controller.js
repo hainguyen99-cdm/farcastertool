@@ -26,6 +26,9 @@ let GameRecordController = class GameRecordController {
     async updateStatusToUsed(recordId) {
         return await this.gameRecordService.updateStatusToUsed(recordId);
     }
+    async createWithToken(createDto) {
+        return await this.gameRecordService.createWithProvidedToken(createDto);
+    }
 };
 exports.GameRecordController = GameRecordController;
 __decorate([
@@ -42,6 +45,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], GameRecordController.prototype, "updateStatusToUsed", null);
+__decorate([
+    (0, common_1.Post)('create-with-token'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], GameRecordController.prototype, "createWithToken", null);
 exports.GameRecordController = GameRecordController = __decorate([
     (0, common_1.Controller)('game-records'),
     __metadata("design:paramtypes", [game_record_service_1.GameRecordService])
