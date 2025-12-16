@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import GameLabelSelector from '../../accounts/components/game-label-selector';
 
-export type ActionType = 'GetFeed' | 'LikeCast' | 'RecastCast' | 'PinMiniApp' | 'Delay' | 'JoinChannel' | 'FollowUser' | 'UpdateWallet' | 'CreateRecordGame' | string;
+export type ActionType = 'GetFeed' | 'LikeCast' | 'RecastCast' | 'PinMiniApp' | 'Delay' | 'JoinChannel' | 'FollowUser' | 'UpdateWallet' | 'CreateRecordGame' | 'CreateCast' | string;
 
 export interface ScriptAction {
   readonly id: string;
@@ -41,7 +41,7 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
     setShuffle(script.shuffle || false);
   }, [script.actions, script.loop, script.shuffle]);
 
-  const availableTypes: ActionType[] = ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel', 'FollowUser', 'UpdateWallet', 'CreateRecordGame', 'MiniAppEvent', 'AnalyticsEvents'];
+  const availableTypes: ActionType[] = ['GetFeed', 'LikeCast', 'RecastCast', 'PinMiniApp', 'Delay', 'JoinChannel', 'FollowUser', 'UpdateWallet', 'CreateRecordGame', 'CreateCast', 'MiniAppEvent', 'AnalyticsEvents'];
 
   const handleAddAction = useCallback((): void => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -297,6 +297,78 @@ const ScriptBuilder: React.FC<ScriptBuilderProps> = ({ script, onSave }) => {
                       onChange={(val) => handleUpdateAction(action.id, { config: { ...action.config, gameLabel: val } })}
                     />
                     <p className="text-xs text-gray-500">Must match a privy token's game label on the account.</p>
+                  </div>
+                </div>
+              )}
+              {action.type === 'CreateCast' && (
+                <div className="space-y-4 max-w-2xl">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor={`castText-${action.id}`} className="text-sm text-gray-700">Cast Text</label>
+                    <textarea
+                      id={`castText-${action.id}`}
+                      placeholder="Enter your cast text here..."
+                      className="rounded-md border border-gray-300 px-2 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                      rows={3}
+                      value={typeof action.config?.text === 'string' ? action.config.text as string : ''}
+                      onChange={(e) => {
+                        handleUpdateAction(action.id, {
+                          config: { ...action.config, text: e.target.value }
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-gray-500">The text content of your cast (max 300 characters).</p>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor={`uploadMedia-${action.id}`} className="text-sm text-gray-700">Upload Media Files (Optional)</label>
+                    <input
+                      id={`uploadMedia-${action.id}`}
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        if (files) {
+                          const fileArray = Array.from(files).map(f => ({
+                            name: f.name,
+                            size: f.size,
+                            type: f.type,
+                            file: f // Store actual File object for upload
+                          }));
+                          handleUpdateAction(action.id, {
+                            config: { 
+                              ...action.config, 
+                              mediaFiles: fileArray
+                            }
+                          });
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-gray-500">Upload image files to be included in the cast. Maximum 4 images per cast.</p>
+                  </div>
+
+                  {typeof action.config?.mediaFiles === 'object' && Array.isArray(action.config.mediaFiles) && (action.config.mediaFiles as any[]).length > 0 && (
+                    <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
+                      <p className="text-xs font-medium text-blue-900 mb-2">Selected Files ({(action.config.mediaFiles as any[]).length}):</p>
+                      <ul className="space-y-1">
+                        {(action.config.mediaFiles as any[]).map((file, idx) => (
+                          <li key={idx} className="text-xs text-blue-700">
+                            {idx + 1}. {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="rounded-md border border-green-200 bg-green-50 p-3">
+                    <p className="text-xs font-medium text-green-900">How it works:</p>
+                    <ul className="text-xs text-green-700 mt-2 space-y-1 list-disc list-inside">
+                      <li>Upload image files (optional)</li>
+                      <li>Files are automatically uploaded to Farcaster during cast creation</li>
+                      <li>Media URLs are automatically added to your cast</li>
+                      <li>Maximum 4 images per cast</li>
+                    </ul>
                   </div>
                 </div>
               )}

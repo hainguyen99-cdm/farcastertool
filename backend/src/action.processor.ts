@@ -364,14 +364,31 @@ export class ActionProcessor {
         case ActionType.CREATE_CAST:
         case 'CreateCast': {
           const text = action.config['text'] as string;
-          const mediaUrls = action.config['mediaUrls'] as string[] | undefined;
+          const embedsFromConfig = action.config['embeds'] as string[] | undefined;
+          const embedUrlsStr = action.config['embedUrls'] as string | undefined;
           
-          if (!text) {
+          if (!text || text.trim().length === 0) {
             throw new Error('Missing text for CREATE_CAST action');
           }
           
-          // Create cast with optional media embeds
-          result = await this.farcasterService.createCast(encryptedToken, text, mediaUrls);
+          // Prefer array of embeds if provided (uploaded media URLs)
+          let embeds: string[] = Array.isArray(embedsFromConfig) ? embedsFromConfig.filter(u => typeof u === 'string' && (u.startsWith('http://') || u.startsWith('https://'))) : [];
+          
+          // Fallback: parse from embedUrls string (legacy)
+          if (embeds.length === 0 && embedUrlsStr && embedUrlsStr.trim().length > 0) {
+            const urls = embedUrlsStr
+              .split('\n')
+              .map(url => url.trim())
+              .filter(url => url.length > 0 && (url.startsWith('http://') || url.startsWith('https://')));
+            embeds = urls;
+          }
+          
+          // Enforce max 4 embeds
+          if (embeds.length > 4) {
+            embeds = embeds.slice(0, 4);
+          }
+          
+          result = await this.farcasterService.createCast(encryptedToken, text, embeds);
           break;
         }
         default: {

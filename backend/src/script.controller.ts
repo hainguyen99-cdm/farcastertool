@@ -1,12 +1,14 @@
 import { Body, Controller, Post, Get, Param } from '@nestjs/common';
 import { ScriptExecutionService, ScriptAction, ScriptExecutionOptions } from './script-execution.service';
 import { AccountService } from './account.service';
+import { FarcasterService } from './farcaster.service';
 
 @Controller('scripts')
 export class ScriptController {
   constructor(
     private readonly scriptExecutionService: ScriptExecutionService,
-    private readonly accountService: AccountService
+    private readonly accountService: AccountService,
+    private readonly farcasterService: FarcasterService,
   ) {}
 
   @Post('execute')
@@ -61,6 +63,21 @@ export class ScriptController {
         })) || []
       }
     };
+  }
+
+  @Post('generate-image-upload-url')
+  async generateImageUploadUrl(
+    @Body() body: { accountId: string }
+  ) {
+    if (!body?.accountId) {
+      throw new Error('accountId is required');
+    }
+    const account = await this.accountService.findOne(body.accountId);
+    if (!account) {
+      throw new Error('Account not found');
+    }
+    // Use account's encrypted token to generate upload URL
+    return await this.farcasterService.generateImageUploadUrl(account.encryptedToken);
   }
 }
 
