@@ -500,6 +500,150 @@ export class FarcasterService {
 		}
 	}
 
+	/**
+	 * Generate an image upload URL from Farcaster's image delivery service.
+	 * Returns the upload URL and optimistic image ID.
+	 */
+	async generateImageUploadUrl(encryptedToken: string): Promise<{
+		url: string;
+		optimisticImageId: string;
+	}> {
+		const token: string = this.encryptionService.decrypt(encryptedToken);
+		this.enforceRateLimit(`generateImageUploadUrl:${encryptedToken}`);
+		try {
+			const response = await this.executeWithRetry(async () =>
+				firstValueFrom(
+					this.httpService.post(
+						`${this.baseUrl}/v1/generate-image-upload-url`,
+						{},
+						{
+							headers: {
+								...this.buildAuthHeaders(token),
+								'accept': '*/*',
+								'accept-language': 'en-US,en;q=0.9',
+								'fc-amplitude-device-id': 'J1mIpCCJ7U9nPLneVJVkYE',
+								'fc-amplitude-session-id': '1765852985832',
+								'idempotency-key': this.generateIdempotencyKey(),
+								'origin': 'https://farcaster.xyz',
+								'priority': 'u=1, i',
+								'referer': 'https://farcaster.xyz/',
+								'sec-ch-ua': '"Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
+								'sec-ch-ua-mobile': '?0',
+								'sec-ch-ua-platform': '"Windows"',
+								'sec-fetch-dest': 'empty',
+								'sec-fetch-mode': 'cors',
+								'sec-fetch-site': 'same-site',
+								'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
+							},
+						},
+					),
+				),
+			);
+			const data = response.data as any;
+			return {
+				url: data.url,
+				optimisticImageId: data.optimisticImageId,
+			};
+		} catch (err) {
+			throw new HttpException('Failed to generate image upload URL', this.resolveStatus(err));
+		}
+	}
+
+	/**
+	 * Upload media file to the provided upload URL.
+	 * Returns the image metadata including variants.
+	 */
+	async uploadMediaFile(uploadUrl: string, fileBuffer: Buffer, fileName: string, mimeType: string = 'image/jpeg'): Promise<any> {
+		try {
+			const FormData = (await import('form-data')).default;
+			const formData = new FormData();
+			formData.append('file', fileBuffer, {
+				filename: fileName,
+				contentType: mimeType,
+			});
+
+			const response = await this.executeWithRetry(async () =>
+				firstValueFrom(
+					this.httpService.post(
+						uploadUrl,
+						formData,
+						{
+							headers: {
+								...formData.getHeaders(),
+								'accept': '*/*',
+								'accept-language': 'en-US,en;q=0.9',
+								'origin': 'https://farcaster.xyz',
+								'priority': 'u=1, i',
+								'referer': 'https://farcaster.xyz/',
+								'sec-ch-ua': '"Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
+								'sec-ch-ua-mobile': '?0',
+								'sec-ch-ua-platform': '"Windows"',
+								'sec-fetch-dest': 'empty',
+								'sec-fetch-mode': 'cors',
+								'sec-fetch-site': 'cross-site',
+								'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
+							},
+						},
+					),
+				),
+			);
+			return response.data as any;
+		} catch (err) {
+			throw new HttpException('Failed to upload media file', this.resolveStatus(err));
+		}
+	}
+
+	/**
+	 * Create a cast with optional embeds (media URLs).
+	 * Text is required, embeds are optional.
+	 */
+	async createCast(
+		encryptedToken: string,
+		text: string,
+		embeds?: string[]
+	): Promise<unknown> {
+		const token: string = this.encryptionService.decrypt(encryptedToken);
+		this.enforceRateLimit(`createCast:${encryptedToken}`);
+		try {
+			const payload: Record<string, unknown> = { text };
+			if (embeds && embeds.length > 0) {
+				payload.embeds = embeds;
+			}
+
+			const response = await this.executeWithRetry(async () =>
+				firstValueFrom(
+					this.httpService.post(
+						`${this.baseUrl}/v2/casts`,
+						payload,
+						{
+							headers: {
+								...this.buildAuthHeaders(token),
+								'accept': '*/*',
+								'accept-language': 'en-US,en;q=0.9',
+								'fc-amplitude-device-id': 'J1mIpCCJ7U9nPLneVJVkYE',
+								'fc-amplitude-session-id': '1765852985832',
+								'idempotency-key': this.generateIdempotencyKey(),
+								'origin': 'https://farcaster.xyz',
+								'priority': 'u=1, i',
+								'referer': 'https://farcaster.xyz/',
+								'sec-ch-ua': '"Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
+								'sec-ch-ua-mobile': '?0',
+								'sec-ch-ua-platform': '"Windows"',
+								'sec-fetch-dest': 'empty',
+								'sec-fetch-mode': 'cors',
+								'sec-fetch-site': 'same-site',
+								'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
+							},
+						},
+					),
+				),
+			);
+			return response.data as unknown;
+		} catch (err) {
+			throw new HttpException('Failed to create cast', this.resolveStatus(err));
+		}
+	}
+
 	private async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
 		let attempt: number = 0;
 		let backoffMs: number = FarcasterService.INITIAL_BACKOFF_MS;
@@ -551,6 +695,10 @@ export class FarcasterService {
 
 	private async sleep(ms: number): Promise<void> {
 		await new Promise((resolve) => setTimeout(resolve, ms));
+	}
+
+	private generateIdempotencyKey(): string {
+		return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 	}
 }
 

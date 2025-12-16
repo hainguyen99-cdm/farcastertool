@@ -361,6 +361,19 @@ export class ActionProcessor {
           result = await this.farcasterService.sendAnalyticsEvents(encryptedToken, events);
           break;
         }
+        case ActionType.CREATE_CAST:
+        case 'CreateCast': {
+          const text = action.config['text'] as string;
+          const mediaUrls = action.config['mediaUrls'] as string[] | undefined;
+          
+          if (!text) {
+            throw new Error('Missing text for CREATE_CAST action');
+          }
+          
+          // Create cast with optional media embeds
+          result = await this.farcasterService.createCast(encryptedToken, text, mediaUrls);
+          break;
+        }
         default: {
           const neverType: never = action.type as never;
           throw new Error(`Unknown action type: ${String(neverType)}`);

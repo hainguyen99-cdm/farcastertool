@@ -16,6 +16,7 @@ export enum ActionType {
   CREATE_RECORD_GAME = 'CreateRecordGame',
   MINI_APP_EVENT = 'MiniAppEvent',
   ANALYTICS_EVENTS = 'AnalyticsEvents',
+  CREATE_CAST = 'CreateCast',
 }
 
 /**
