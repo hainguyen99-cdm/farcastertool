@@ -78,27 +78,7 @@ const ScriptsPage: React.FC = () => {
         ? prevScripts.map(s => s.id === script.id ? script : s)
         : [...prevScripts, script];
       
-      // Clean up File objects before saving to localStorage
-      const scriptsToSave = updatedScripts.map(s => ({
-        ...s,
-        actions: s.actions.map(a => ({
-          ...a,
-          config: {
-            ...a.config,
-            // Remove File objects from mediaFiles before saving
-            mediaFiles: Array.isArray(a.config?.mediaFiles)
-              ? (a.config.mediaFiles as any[]).map(f => ({
-                  name: f.name,
-                  size: f.size,
-                  type: f.type
-                  // Don't save the actual File object
-                }))
-              : a.config?.mediaFiles
-          }
-        }))
-      }));
-      
-      localStorage.setItem('farcaster-scripts', JSON.stringify(scriptsToSave));
+      localStorage.setItem('farcaster-scripts', JSON.stringify(updatedScripts));
       return updatedScripts;
     });
   }, []);
@@ -177,49 +157,13 @@ const ScriptsPage: React.FC = () => {
           }
         }
         
-        // Preprocess actions for this account: upload media and inject embeds for CreateCast
-        const actionsForAccount: ScriptAction[] = [];
-        for (const a of script.actions) {
-          if (a.type === 'CreateCast') {
-            const cfg = a.config || {};
-            let embeds: string[] = Array.isArray((cfg as any).embeds) ? ((cfg as any).embeds as string[]) : [];
-            const mediaFiles = Array.isArray((cfg as any).mediaFiles) ? ((cfg as any).mediaFiles as any[]) : [];
-            const files = mediaFiles.filter(f => f?.file instanceof File).map(f => f.file as File);
-            if (files.length > 0) {
-              const { uploadMultipleMediaFiles } = await import('./utils/media-upload-service');
-              const uploadRes = await uploadMultipleMediaFiles(accountId, files);
-              if (!uploadRes.success) {
-                // push a failed result placeholder and continue to next action
-                actionsForAccount.push({ ...a, config: { text: (cfg as any).text || '', embeds: [] } });
-                interimResults.push({ actionType: a.type, success: false, error: `Media upload failed: ${uploadRes.errors.join(', ')}` });
-                setActionResults([...interimResults]);
-                continue;
-              }
-              embeds = [...embeds, ...uploadRes.mediaUrls];
-            }
-            // Enforce max 4 embeds
-            if (embeds.length > 4) embeds = embeds.slice(0, 4);
-            actionsForAccount.push({
-              ...a,
-              config: {
-                text: (cfg as any).text || '',
-                embeds,
-              },
-            });
-          } else {
-            // Remove any mediaFiles from other actions' configs to avoid serialization issues
-            const { mediaFiles, ...rest } = (a.config || {}) as any;
-            actionsForAccount.push({ ...a, config: { ...rest } });
-          }
-        }
-
         // Call API per-account and merge results
         const res = await fetch('/api/scripts/execute', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             accountId, 
-            actions: actionsForAccount,
+            actions: script.actions,
             options: { loop: script.loop, shuffle: script.shuffle }
           }),
         });

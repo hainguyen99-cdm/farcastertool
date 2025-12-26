@@ -1,11 +1,9 @@
 import { ScriptExecutionService, ScriptAction, ScriptExecutionOptions } from './script-execution.service';
 import { AccountService } from './account.service';
-import { FarcasterService } from './farcaster.service';
 export declare class ScriptController {
     private readonly scriptExecutionService;
     private readonly accountService;
-    private readonly farcasterService;
-    constructor(scriptExecutionService: ScriptExecutionService, accountService: AccountService, farcasterService: FarcasterService);
+    constructor(scriptExecutionService: ScriptExecutionService, accountService: AccountService);
     executeScript(body: {
         accountId: string;
         actions: ScriptAction[];
@@ -37,7 +35,4 @@ export declare class ScriptController {
             }[];
         };
     }>;
-    generateImageUploadUrl(body: {
-        accountId: string;
-    }): Promise<unknown>;
 }

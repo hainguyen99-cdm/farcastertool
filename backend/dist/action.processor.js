@@ -305,21 +305,54 @@ let ActionProcessor = class ActionProcessor {
                 case scenario_schema_1.ActionType.CREATE_CAST:
                 case 'CreateCast': {
                     const text = action.config['text'];
-                    const embedsFromConfig = action.config['embeds'];
-                    const embedUrlsStr = action.config['embedUrls'];
-                    if (!text || text.trim().length === 0) {
+                    if (!text) {
                         throw new Error('Missing text for CREATE_CAST action');
                     }
-                    let embeds = Array.isArray(embedsFromConfig) ? embedsFromConfig.filter(u => typeof u === 'string' && (u.startsWith('http://') || u.startsWith('https://'))) : [];
-                    if (embeds.length === 0 && embedUrlsStr && embedUrlsStr.trim().length > 0) {
-                        const urls = embedUrlsStr
-                            .split('\n')
-                            .map(url => url.trim())
-                            .filter(url => url.length > 0 && (url.startsWith('http://') || url.startsWith('https://')));
-                        embeds = urls;
+                    let embeds = [];
+                    const directEmbeds = action.config['embeds'];
+                    if (Array.isArray(directEmbeds) && directEmbeds.every((e) => typeof e === 'string')) {
+                        embeds = directEmbeds;
                     }
-                    if (embeds.length > 4) {
-                        embeds = embeds.slice(0, 4);
+                    else {
+                        const imageUrl = action.config['imageUrl'];
+                        const imageFilePath = action.config['imageFilePath'];
+                        if (imageUrl || imageFilePath) {
+                            const { url: uploadUrl } = await this.farcasterService.generateImageUploadUrl(encryptedToken);
+                            let fileBuffer;
+                            let filename = 'image.jpg';
+                            let contentType = 'image/jpeg';
+                            if (imageFilePath) {
+                                const path = await Promise.resolve().then(() => require('path'));
+                                const fs = await Promise.resolve().then(() => require('fs'));
+                                fileBuffer = await fs.promises.readFile(imageFilePath);
+                                filename = path.basename(imageFilePath);
+                                const lower = filename.toLowerCase();
+                                if (lower.endsWith('.png'))
+                                    contentType = 'image/png';
+                                else if (lower.endsWith('.webp'))
+                                    contentType = 'image/webp';
+                                else if (lower.endsWith('.gif'))
+                                    contentType = 'image/gif';
+                                else
+                                    contentType = 'image/jpeg';
+                            }
+                            else {
+                                const fetched = await this.farcasterService.fetchImageFromUrl(imageUrl);
+                                fileBuffer = fetched.buffer;
+                                filename = fetched.filename;
+                                contentType = fetched.contentType || 'image/jpeg';
+                            }
+                            const uploaded = await this.farcasterService.uploadImageToUrl(uploadUrl, fileBuffer, filename, contentType);
+                            const originalVariant = (uploaded.variants || []).find((v) => /\/original$/.test(v));
+                            let embedUrl = originalVariant;
+                            if (!embedUrl) {
+                                embedUrl = `https://imagedelivery.net/BXluQx4ige9GuW0Ia56BHw/${uploaded.id}/original`;
+                            }
+                            if (!embedUrl) {
+                                throw new Error('Failed to produce embed URL for uploaded image');
+                            }
+                            embeds = [embedUrl];
+                        }
                     }
                     result = await this.farcasterService.createCast(encryptedToken, text, embeds);
                     break;

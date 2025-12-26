@@ -364,30 +364,61 @@ export class ActionProcessor {
         case ActionType.CREATE_CAST:
         case 'CreateCast': {
           const text = action.config['text'] as string;
-          const embedsFromConfig = action.config['embeds'] as string[] | undefined;
-          const embedUrlsStr = action.config['embedUrls'] as string | undefined;
-          
-          if (!text || text.trim().length === 0) {
+          if (!text) {
             throw new Error('Missing text for CREATE_CAST action');
           }
-          
-          // Prefer array of embeds if provided (uploaded media URLs)
-          let embeds: string[] = Array.isArray(embedsFromConfig) ? embedsFromConfig.filter(u => typeof u === 'string' && (u.startsWith('http://') || u.startsWith('https://'))) : [];
-          
-          // Fallback: parse from embedUrls string (legacy)
-          if (embeds.length === 0 && embedUrlsStr && embedUrlsStr.trim().length > 0) {
-            const urls = embedUrlsStr
-              .split('\n')
-              .map(url => url.trim())
-              .filter(url => url.length > 0 && (url.startsWith('http://') || url.startsWith('https://')));
-            embeds = urls;
+          let embeds: string[] = [];
+
+          // Allow direct embeds if provided
+          const directEmbeds = action.config['embeds'];
+          if (Array.isArray(directEmbeds) && directEmbeds.every((e) => typeof e === 'string')) {
+            embeds = directEmbeds as string[];
+          } else {
+            const imageUrl = action.config['imageUrl'] as string | undefined;
+            const imageFilePath = action.config['imageFilePath'] as string | undefined;
+            if (imageUrl || imageFilePath) {
+              // 1) get upload URL
+              const { url: uploadUrl } = await this.farcasterService.generateImageUploadUrl(encryptedToken);
+
+              // 2) prepare file
+              let fileBuffer: Buffer;
+              let filename = 'image.jpg';
+              let contentType = 'image/jpeg';
+
+              if (imageFilePath) {
+                const path = await import('path');
+                const fs = await import('fs');
+                fileBuffer = await fs.promises.readFile(imageFilePath);
+                filename = path.basename(imageFilePath);
+                // naive content type detection based on extension
+                const lower = filename.toLowerCase();
+                if (lower.endsWith('.png')) contentType = 'image/png';
+                else if (lower.endsWith('.webp')) contentType = 'image/webp';
+                else if (lower.endsWith('.gif')) contentType = 'image/gif';
+                else contentType = 'image/jpeg';
+              } else {
+                const fetched = await this.farcasterService.fetchImageFromUrl(imageUrl!);
+                fileBuffer = fetched.buffer;
+                filename = fetched.filename;
+                contentType = fetched.contentType || 'image/jpeg';
+              }
+
+              // 3) upload file
+              const uploaded = await this.farcasterService.uploadImageToUrl(uploadUrl, fileBuffer, filename, contentType);
+              // Prefer 'original' variant if present
+              const originalVariant = (uploaded.variants || []).find((v) => /\/original$/.test(v));
+              let embedUrl = originalVariant;
+              if (!embedUrl) {
+                // fallback construct original variant URL
+                embedUrl = `https://imagedelivery.net/BXluQx4ige9GuW0Ia56BHw/${uploaded.id}/original`;
+              }
+              if (!embedUrl) {
+                throw new Error('Failed to produce embed URL for uploaded image');
+              }
+              embeds = [embedUrl];
+            }
           }
-          
-          // Enforce max 4 embeds
-          if (embeds.length > 4) {
-            embeds = embeds.slice(0, 4);
-          }
-          
+
           result = await this.farcasterService.createCast(encryptedToken, text, embeds);
           break;
         }

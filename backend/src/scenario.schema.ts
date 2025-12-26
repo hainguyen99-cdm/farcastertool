@@ -14,9 +14,9 @@ export enum ActionType {
   UPDATE_WALLET = 'UpdateWallet',
   CREATE_WALLET = 'CreateWallet',
   CREATE_RECORD_GAME = 'CreateRecordGame',
-  CREATE_CAST = 'CreateCast',
   MINI_APP_EVENT = 'MiniAppEvent',
   ANALYTICS_EVENTS = 'AnalyticsEvents',
+  CREATE_CAST = 'CreateCast',
 }
 
 /**

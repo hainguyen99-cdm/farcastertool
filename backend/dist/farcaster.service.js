@@ -15,6 +15,12 @@ const common_1 = require("@nestjs/common");
 const axios_1 = require("@nestjs/axios");
 const rxjs_1 = require("rxjs");
 const encryption_service_1 = require("./encryption.service");
+const form_data_1 = require("form-data");
+const path = require("path");
+const crypto = require("crypto");
+function cryptoRandomId(bytes = 16) {
+    return crypto.randomBytes(bytes).toString('hex');
+}
 let FarcasterService = class FarcasterService {
     static { FarcasterService_1 = this; }
     httpService;
@@ -25,6 +31,7 @@ let FarcasterService = class FarcasterService {
     static RATE_LIMIT_WINDOW_MS = 1000;
     static RATE_LIMIT_MAX_REQUESTS = 5;
     rateLimitStore = new Map();
+    imageDeliveryAccount = 'BXluQx4ige9GuW0Ia56BHw';
     constructor(httpService, encryptionService) {
         this.httpService = httpService;
         this.encryptionService = encryptionService;
@@ -189,43 +196,6 @@ let FarcasterService = class FarcasterService {
             throw new common_1.HttpException('Failed to recast', this.resolveStatus(err));
         }
     }
-    async generateImageUploadUrl(encryptedToken) {
-        const token = this.encryptionService.decrypt(encryptedToken);
-        this.enforceRateLimit(`generateImageUploadUrl:${encryptedToken}`);
-        try {
-            const response = await this.executeWithRetry(async () => (0, rxjs_1.firstValueFrom)(this.httpService.post(`${this.baseUrl}/v1/generate-image-upload-url`, {}, { headers: this.buildAuthHeaders(token) })));
-            return response.data;
-        }
-        catch (err) {
-            throw new common_1.HttpException('Failed to generate image upload URL', this.resolveStatus(err));
-        }
-    }
-    async createCast(encryptedToken, text, embeds = []) {
-        const token = this.encryptionService.decrypt(encryptedToken);
-        this.enforceRateLimit(`createCast:${encryptedToken}`);
-        if (!text || text.trim().length === 0) {
-            throw new common_1.HttpException('Cast text is required', common_1.HttpStatus.BAD_REQUEST);
-        }
-        if (text.length > 320) {
-            throw new common_1.HttpException('Cast text must be 320 characters or less', common_1.HttpStatus.BAD_REQUEST);
-        }
-        if (embeds.length > 4) {
-            throw new common_1.HttpException('Maximum 4 embeds allowed per cast', common_1.HttpStatus.BAD_REQUEST);
-        }
-        try {
-            const payload = {
-                text: text.trim(),
-            };
-            if (embeds.length > 0) {
-                payload.embeds = embeds;
-            }
-            const response = await this.executeWithRetry(async () => (0, rxjs_1.firstValueFrom)(this.httpService.post(`${this.baseUrl}/v2/casts`, payload, { headers: this.buildAuthHeaders(token) })));
-            return response.data;
-        }
-        catch (err) {
-            throw new common_1.HttpException('Failed to create cast', this.resolveStatus(err));
-        }
-    }
     async joinChannel(encryptedToken, channelKey, inviteCode) {
         const token = this.encryptionService.decrypt(encryptedToken);
         this.enforceRateLimit(`joinChannel:${encryptedToken}`);
@@ -330,6 +300,77 @@ let FarcasterService = class FarcasterService {
         }
         catch (err) {
             throw new common_1.HttpException('Failed to get onboarding state', this.resolveStatus(err));
+        }
+    }
+    async generateImageUploadUrl(encryptedToken) {
+        const token = this.encryptionService.decrypt(encryptedToken);
+        this.enforceRateLimit(`generateImageUploadUrl:${encryptedToken}`);
+        try {
+            const response = await this.executeWithRetry(async () => (0, rxjs_1.firstValueFrom)(this.httpService.post(`${this.baseUrl}/v1/generate-image-upload-url`, {}, {
+                headers: {
+                    ...this.buildAuthHeaders(token),
+                    'idempotency-key': cryptoRandomId(),
+                    'accept': '*/*',
+                    'origin': 'https://farcaster.xyz',
+                    'referer': 'https://farcaster.xyz/',
+                },
+            })));
+            const data = response.data;
+            return { url: data?.url, optimisticImageId: data?.optimisticImageId };
+        }
+        catch (err) {
+            throw new common_1.HttpException('Failed to generate image upload url', this.resolveStatus(err));
+        }
+    }
+    async uploadImageToUrl(uploadUrl, file, filename, contentType = 'image/jpeg') {
+        try {
+            const form = new form_data_1.default();
+            form.append('file', file, { filename, contentType });
+            const headers = {
+                ...form.getHeaders(),
+                accept: '*/*',
+                origin: 'https://farcaster.xyz',
+                referer: 'https://farcaster.xyz/',
+            };
+            const response = await this.executeWithRetry(async () => (0, rxjs_1.firstValueFrom)(this.httpService.post(uploadUrl, form, { headers })));
+            const data = response.data;
+            return { id: data?.result?.id, variants: data?.result?.variants || [] };
+        }
+        catch (err) {
+            throw new common_1.HttpException('Failed to upload image', this.resolveStatus(err));
+        }
+    }
+    async fetchImageFromUrl(imageUrl) {
+        try {
+            const res = await this.executeWithRetry(async () => (0, rxjs_1.firstValueFrom)(this.httpService.get(imageUrl, { responseType: 'arraybuffer' })));
+            const contentType = res.headers['content-type'] || 'application/octet-stream';
+            const buffer = Buffer.from(res.data);
+            const urlObj = new URL(imageUrl);
+            const base = path.basename(urlObj.pathname) || 'image';
+            const filename = base.includes('.') ? base : `${base}.${contentType.split('/')[1] || 'jpg'}`;
+            return { buffer, filename, contentType };
+        }
+        catch (err) {
+            throw new common_1.HttpException('Failed to download image', this.resolveStatus(err));
+        }
+    }
+    async createCast(encryptedToken, text, embeds = []) {
+        const token = this.encryptionService.decrypt(encryptedToken);
+        this.enforceRateLimit(`createCast:${encryptedToken}`);
+        try {
+            const response = await this.executeWithRetry(async () => (0, rxjs_1.firstValueFrom)(this.httpService.post(`${this.baseUrl}/v2/casts`, { text, embeds }, {
+                headers: {
+                    ...this.buildAuthHeaders(token),
+                    'idempotency-key': cryptoRandomId(),
+                    accept: '*/*',
+                    origin: 'https://farcaster.xyz',
+                    referer: 'https://farcaster.xyz/',
+                },
+            })));
+            return response.data;
+        }
+        catch (err) {
+            throw new common_1.HttpException('Failed to create cast', this.resolveStatus(err));
         }
     }
     async sendMiniAppEvent(encryptedToken, domain, event, platformType = 'web') {

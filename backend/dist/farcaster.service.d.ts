@@ -9,6 +9,7 @@ export declare class FarcasterService {
     private static readonly RATE_LIMIT_WINDOW_MS;
     private static readonly RATE_LIMIT_MAX_REQUESTS;
     private readonly rateLimitStore;
+    private readonly imageDeliveryAccount;
     constructor(httpService: HttpService, encryptionService: EncryptionService);
     private buildAuthHeaders;
     getRandomCastHashFromFeed(feedResponse: unknown): string | null;
@@ -20,8 +21,6 @@ export declare class FarcasterService {
     getFeed(encryptedToken: string): Promise<unknown>;
     likeCast(encryptedToken: string, castHash: string): Promise<unknown>;
     recastCast(encryptedToken: string, castHash: string): Promise<unknown>;
-    generateImageUploadUrl(encryptedToken: string): Promise<unknown>;
-    createCast(encryptedToken: string, text: string, embeds?: string[]): Promise<unknown>;
     joinChannel(encryptedToken: string, channelKey: string, inviteCode: string): Promise<unknown>;
     pinMiniApp(encryptedToken: string, domain: string): Promise<unknown>;
     getUserByUsername(encryptedToken: string, username: string): Promise<unknown>;
@@ -31,6 +30,20 @@ export declare class FarcasterService {
         username: string;
         fid: number;
     }>;
+    generateImageUploadUrl(encryptedToken: string): Promise<{
+        url: string;
+        optimisticImageId: string;
+    }>;
+    uploadImageToUrl(uploadUrl: string, file: Buffer, filename: string, contentType?: string): Promise<{
+        id: string;
+        variants: string[];
+    }>;
+    fetchImageFromUrl(imageUrl: string): Promise<{
+        buffer: Buffer;
+        filename: string;
+        contentType: string;
+    }>;
+    createCast(encryptedToken: string, text: string, embeds?: string[]): Promise<unknown>;
     sendMiniAppEvent(encryptedToken: string, domain: string, event: string, platformType?: string): Promise<unknown>;
     sendAnalyticsEvents(encryptedToken: string, events: Array<{
         type: string;

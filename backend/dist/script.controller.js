@@ -16,15 +16,12 @@ exports.ScriptController = void 0;
 const common_1 = require("@nestjs/common");
 const script_execution_service_1 = require("./script-execution.service");
 const account_service_1 = require("./account.service");
-const farcaster_service_1 = require("./farcaster.service");
 let ScriptController = class ScriptController {
     scriptExecutionService;
     accountService;
-    farcasterService;
-    constructor(scriptExecutionService, accountService, farcasterService) {
+    constructor(scriptExecutionService, accountService) {
         this.scriptExecutionService = scriptExecutionService;
         this.accountService = accountService;
-        this.farcasterService = farcasterService;
     }
     async executeScript(body) {
         return await this.scriptExecutionService.executeScript(body.accountId, body.actions, body.options);
@@ -50,16 +47,6 @@ let ScriptController = class ScriptController {
             }
         };
     }
-    async generateImageUploadUrl(body) {
-        if (!body?.accountId) {
-            throw new Error('accountId is required');
-        }
-        const account = await this.accountService.findOne(body.accountId);
-        if (!account) {
-            throw new Error('Account not found');
-        }
-        return await this.farcasterService.generateImageUploadUrl(account.encryptedToken);
-    }
 };
 exports.ScriptController = ScriptController;
 __decorate([
@@ -84,17 +71,9 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], ScriptController.prototype, "debugAccountReadiness", null);
-__decorate([
-    (0, common_1.Post)('generate-image-upload-url'),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], ScriptController.prototype, "generateImageUploadUrl", null);
 exports.ScriptController = ScriptController = __decorate([
     (0, common_1.Controller)('scripts'),
     __metadata("design:paramtypes", [script_execution_service_1.ScriptExecutionService,
-        account_service_1.AccountService,
-        farcaster_service_1.FarcasterService])
+        account_service_1.AccountService])
 ], ScriptController);
 //# sourceMappingURL=script.controller.js.map
